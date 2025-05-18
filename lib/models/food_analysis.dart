@@ -1,28 +1,29 @@
 class FoodAnalysis {
   final String foodStatus;
   final List<String> detectedFoods;
-  final Map<String, Map<String, dynamic>> nutrition;
-  
+  final Map<String, dynamic> nutrition;
+  final Map<String, dynamic> totalToday;
+  final Map<String, dynamic> totalThisMeal;
 
   FoodAnalysis({
     required this.foodStatus,
     required this.detectedFoods,
     required this.nutrition,
+    required this.totalToday,
+    required this.totalThisMeal,
   });
 
   factory FoodAnalysis.fromJson(Map<String, dynamic> json) {
     return FoodAnalysis(
       foodStatus: json['food_status'],
       detectedFoods: List<String>.from(json['detected_foods']),
-      nutrition: (json['nutrition'] as Map<String, dynamic>).map(
-        (key, value) => MapEntry(
-          key,
-          Map<String, dynamic>.from(value),
-        ),
-      ),
+      nutrition: Map<String, dynamic>.from(json['nutrition']),
+      totalToday: Map<String, dynamic>.from(json['total_today']),
+      totalThisMeal: Map<String, dynamic>.from(json['total_this_meal']),
     );
   }
 }
+
 
 class NutritionInfo {
   final double calories;

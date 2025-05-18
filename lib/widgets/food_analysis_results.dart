@@ -12,6 +12,12 @@ class FoodAnalysisResults extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _sectionTitle("📊 Total This Meal"),
+        _buildNutritionSummary(result.totalThisMeal),
+
+        _sectionTitle("📅 Total Today"),
+        _buildNutritionSummary(result.totalToday),
+
         _sectionTitle("🍽️ Food Status"),
         _infoTile("Status", result.foodStatus.toUpperCase()),
 
@@ -46,16 +52,7 @@ class FoodAnalysisResults extends StatelessWidget {
   }
 
   Widget _buildNutritionCard(String food, Map<String, dynamic> nutrients) {
-    final icons = {
-      'calories': LucideIcons.flame,
-      'fat': LucideIcons.droplet,
-      'protein': LucideIcons.dumbbell,
-      'carbohydrates': LucideIcons.pizza,
-      'fiber': LucideIcons.leaf,
-      'sugar': LucideIcons.candy,
-      'sodium': LucideIcons.circle,
-      'cholesterol': LucideIcons.heartPulse,
-    };
+    final icons = _icons;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -74,11 +71,15 @@ class FoodAnalysisResults extends StatelessWidget {
             Wrap(
               spacing: 12,
               runSpacing: 12,
-              children: nutrients.entries.map((entry) {
-                final icon = icons[entry.key] ?? LucideIcons.circle;
-                final valueWithUnit = _formatNutrient(entry.key, entry.value);
-                return _nutrientTile(entry.key, valueWithUnit, icon);
-              }).toList(),
+              children:
+                  nutrients.entries.map((entry) {
+                    final icon = icons[entry.key] ?? LucideIcons.circle;
+                    final valueWithUnit = _formatNutrient(
+                      entry.key,
+                      entry.value,
+                    );
+                    return _nutrientTile(entry.key, valueWithUnit, icon);
+                  }).toList(),
             ),
           ],
         ),
@@ -97,14 +98,44 @@ class FoodAnalysisResults extends StatelessWidget {
     );
   }
 
+  Widget _buildNutritionSummary(Map<String, dynamic> totals) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children:
+          totals.entries.map((entry) {
+            final icon = _icons[entry.key] ?? LucideIcons.circle;
+            final valueWithUnit = _formatNutrient(entry.key, entry.value);
+            return Chip(
+              avatar: Icon(icon, size: 18),
+              label: Text("${_capitalize(entry.key)}: $valueWithUnit"),
+            );
+          }).toList(),
+    );
+  }
+
   String _capitalize(String input) =>
-      input.isEmpty ? input : input[0].toUpperCase() + input.substring(1).replaceAll('_', ' ');
+      input.isEmpty
+          ? input
+          : input[0].toUpperCase() + input.substring(1).replaceAll('_', ' ');
 
   String _formatNutrient(String key, dynamic value) {
     if (key == 'calories') return "$value kcal";
-    if (['fat', 'protein', 'carbohydrates', 'fiber', 'sugar'].contains(key)) return "$value g";
+    if (['fat', 'protein', 'carbohydrates', 'fiber', 'sugar'].contains(key))
+      return "$value g";
     if (['cholesterol', 'sodium'].contains(key)) return "$value mg";
     if (key == 'weight_grams') return "$value g";
     return value.toString();
   }
+
+  Map<String, IconData> get _icons => {
+    'calories': LucideIcons.flame,
+    'fat': LucideIcons.droplet,
+    'protein': LucideIcons.dumbbell,
+    'carbohydrates': LucideIcons.pizza,
+    'fiber': LucideIcons.leaf,
+    'sugar': LucideIcons.candy,
+    'sodium': LucideIcons.circle,
+    'cholesterol': LucideIcons.heartPulse,
+  };
 }
