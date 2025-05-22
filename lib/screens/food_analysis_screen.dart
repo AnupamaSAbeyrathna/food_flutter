@@ -13,9 +13,9 @@ class FoodAnalysisScreen extends StatelessWidget {
     try {
       await provider.pickAndSetImage(source: source);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
     }
   }
 
@@ -99,10 +99,11 @@ class FoodAnalysisScreen extends StatelessWidget {
   }
 
   Widget _buildSelectedImage(FoodAnalysisProvider provider) {
+    final File imageFile = provider.selectedImage!;
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: Image.file(
-        provider.selectedImage!,
+        imageFile,
         height: 250,
         width: double.infinity,
         fit: BoxFit.cover,
@@ -148,7 +149,8 @@ class FoodAnalysisScreen extends StatelessWidget {
       children: [
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: provider.isLoading ? null : () => provider.analyzeImage(),
+            onPressed:
+                provider.isLoading ? null : () => provider.analyzeImage(),
             icon: const Icon(Icons.send),
             label: const Text('Analyze Food'),
             style: ElevatedButton.styleFrom(
