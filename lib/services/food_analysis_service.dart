@@ -1,18 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/food_analysis.dart';
 
 class FoodAnalysisService {
-  final String apiUrl = 'http://192.168.1.7:8000/analyze';
+  final String apiUrl = 'http://192.168.1.7:8000/food/food_analyze';
 
   Future<FoodAnalysis> analyzeFoodImage(File imageFile) async {
     try {
+      // ✅ Get the Firebase ID token
+      final user = FirebaseAuth.instance.currentUser;
+      final idToken = await user?.getIdToken();
+
+      if (idToken == null) {
+        throw Exception('User not authenticated');
+      }
+
       final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-      request.files.add(await http.MultipartFile.fromPath(
-        'image',
-        imageFile.path,
-      ));
+      request.headers['Authorization'] = 'Bearer $idToken'; // ✅ Add token to header
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       return _processResponse(response);

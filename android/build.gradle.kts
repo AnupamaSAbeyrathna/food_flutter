@@ -1,3 +1,8 @@
+plugins {
+    id("com.google.gms.google-services") version "4.3.15" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false 
+}
+
 allprojects {
     repositories {
         google()
@@ -5,7 +10,7 @@ allprojects {
     }
 }
 
-// Set the NDK version for all projects
+
 allprojects {
     afterEvaluate {
         if (project.hasProperty("android")) {
