@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/food_analysis_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/main_screen.dart'; // Add this line
 
 import 'package:firebase_core/firebase_core.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +13,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +42,36 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const SplashScreen(),
+        home: const SplashScreenWrapper(),
         debugShowCheckedModeBanner: false,
       ),
     );
+  }
+}
+
+// ⏳ After splash, go to MainScreen
+class SplashScreenWrapper extends StatefulWidget {
+  const SplashScreenWrapper({super.key});
+
+  @override
+  State<SplashScreenWrapper> createState() => _SplashScreenWrapperState();
+}
+
+class _SplashScreenWrapperState extends State<SplashScreenWrapper> {
+  bool _showMainScreen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _showMainScreen = true;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _showMainScreen ? const MainScreen() : const SplashScreen();
   }
 }

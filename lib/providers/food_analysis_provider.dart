@@ -13,18 +13,25 @@ class FoodAnalysisProvider with ChangeNotifier {
   String? _selectedImageName;
   FoodAnalysis? _analysisResult;
   String? _error;
+  bool _hasUploaded = false; // ✅ Track upload
 
   bool get isLoading => _isLoading;
   File? get selectedImage => _selectedImage;
   String? get selectedImageName => _selectedImageName;
   FoodAnalysis? get analysisResult => _analysisResult;
   String? get error => _error;
+  bool get hasUploaded => _hasUploaded; // ✅ Getter for upload status
 
-  void setSelectedImage(File image) async {
+  void markUploaded() {
+    _hasUploaded = true; // ✅ Mark uploaded
+  }
+
+  void setSelectedImage(File image) {
     _selectedImage = image;
     _selectedImageName = image.path.split('/').last;
     _analysisResult = null;
     _error = null;
+    _hasUploaded = false; // ✅ Reset on new image
     notifyListeners();
   }
 
@@ -36,6 +43,7 @@ class FoodAnalysisProvider with ChangeNotifier {
       _selectedImageName = pickedImage.name;
       _analysisResult = null;
       _error = null;
+      _hasUploaded = false; // ✅ Reset on new image
       notifyListeners();
     } catch (e) {
       _error = "Failed to pick image: $e";
@@ -48,6 +56,7 @@ class FoodAnalysisProvider with ChangeNotifier {
     _selectedImageName = null;
     _analysisResult = null;
     _error = null;
+    _hasUploaded = false; // ✅ Reset on clear
     notifyListeners();
   }
 

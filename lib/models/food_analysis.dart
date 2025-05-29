@@ -22,7 +22,18 @@ class FoodAnalysis {
       totalThisMeal: Map<String, dynamic>.from(json['total_this_meal']),
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'food_status': foodStatus,
+      'detected_foods': detectedFoods,
+      'nutrition': nutrition,
+      'total_today': totalToday,
+      'total_this_meal': totalThisMeal,
+    };
+  }
 }
+
 
 
 class NutritionInfo {
