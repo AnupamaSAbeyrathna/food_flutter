@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'food_analysis_screen.dart';
+import 'food_analyze/food_analysis_screen.dart';
+import 'medical_record/medical_record_screen.dart'; // Add this import
 import 'login_screen.dart';
 import '../theme.dart';
 
@@ -53,9 +54,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       'gradient': [Colors.blue[400]!, Colors.blue[600]!],
     },
     {
-      'title': 'Scan Barcode',
-      'subtitle': 'Quick nutrition',
-      'icon': Icons.qr_code_scanner,
+      'title': 'Medical Records',
+      'subtitle': 'Take a photo',
+      'icon': Icons.medical_services_outlined,
       'color': Colors.green,
       'gradient': [Colors.green[400]!, Colors.green[600]!],
     },
@@ -153,6 +154,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _navigateToMedicalRecords() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) =>
+                const MedicalRecordScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -195,30 +215,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       Row(
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.notifications_outlined),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Notifications coming soon!'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
                           Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -373,6 +369,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         onTap: () {
                           if (action['title'] == 'Analyze Food') {
                             _navigateToFoodAnalysis();
+                          } else if (action['title'] == 'Medical Records') {
+                            _navigateToMedicalRecords();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

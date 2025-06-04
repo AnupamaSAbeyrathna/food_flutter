@@ -47,10 +47,12 @@ dependencies:
   # For file operations
   path_provider: ^2.1.1
   lucide_icons: ^0.257.0
-  #Firebase Auth & FirestoreIntegration
+  #Firebase Auth , Firestore , Storage Integration
   firebase_core: ^3.13.1
   firebase_auth: ^5.5.4
   cloud_firestore: ^5.6.8
+  firebase_storage: ^12.4.6
+
 
 dev_dependencies:
   #for the app icon

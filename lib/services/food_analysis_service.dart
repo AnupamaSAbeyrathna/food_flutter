@@ -5,7 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/food_analysis.dart';
 
 class FoodAnalysisService {
-  final String apiUrl = 'http://192.168.1.7:8000/food/food_analyze';
+  // TODO: Change to the correct API URL
+  static const String baseUrl = 'http://192.168.107.72:8000';
+  final String apiUrl = '$baseUrl/food/food_analyze';
 
   Future<FoodAnalysis> analyzeFoodImage(File imageFile) async {
     try {

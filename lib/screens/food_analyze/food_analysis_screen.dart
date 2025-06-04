@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../providers/food_analysis_provider.dart';
-import '../widgets/food_analysis_results.dart';
+import '../../providers/food_analysis_provider.dart';
+import '../../widgets/food_analysis_results.dart';
 
 class FoodAnalysisScreen extends StatefulWidget {
   const FoodAnalysisScreen({super.key});

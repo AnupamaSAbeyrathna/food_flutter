@@ -322,7 +322,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               ),
                             ),
                             
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 36),
                             
                             // Remember Me & Forgot Password
                             Row(
