@@ -6,7 +6,7 @@ import '../models/food_analysis.dart';
 
 class FoodAnalysisService {
   // TODO: Change to the correct API URL
-  static const String baseUrl = 'http://192.168.107.72:8000';
+  static const String baseUrl = 'http://192.168.1.7:8000';
   final String apiUrl = '$baseUrl/food/food_analyze';
 
   Future<FoodAnalysis> analyzeFoodImage(File imageFile) async {
@@ -20,7 +20,8 @@ class FoodAnalysisService {
       }
 
       final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-      request.headers['Authorization'] = 'Bearer $idToken'; // ✅ Add token to header
+      request.headers['Authorization'] =
+          'Bearer $idToken'; // ✅ Add token to header
       request.files.add(
         await http.MultipartFile.fromPath('image', imageFile.path),
       );
