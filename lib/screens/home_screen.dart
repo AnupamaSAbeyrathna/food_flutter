@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'food_analyze/food_analysis_screen.dart';
-import 'medical_record/medical_record_screen.dart'; // Add this import
+import 'medical_record/medical_record_upload_screen.dart';
 import 'login_screen.dart';
 import '../theme.dart';
 

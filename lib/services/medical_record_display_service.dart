@@ -1,0 +1,115 @@
+// lib/services/medical_records_service.dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/medical_record_display_model.dart';
+
+class MedicalRecordsService {
+  static const String baseUrl = 'http://192.168.107.72:8000'; // Replace with your actual API URL
+  
+  // Helper method to get auth headers
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not authenticated');
+    }
+    
+    final token = await user.getIdToken();
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $token',
+    };
+  }
+  
+  Future<List<MedicalRecordDisplay>> getUserRecords(String userId, {String? recordType}) async {
+    try {
+      // Fixed: Added /medical prefix
+      String url = '$baseUrl/medical/users/$userId/medical-records';
+      if (recordType != null && recordType.isNotEmpty) {
+        url += '?type=$recordType';
+      }
+      
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        List<dynamic> data = responseData['data'];
+        return data.map((record) => MedicalRecordDisplay.fromJson(record)).toList();
+      } else {
+        throw Exception('Failed to load medical records');
+      }
+    } catch (e) {
+      throw Exception('Error fetching records: $e');
+    }
+  }
+  
+  Future<MedicalRecordDisplay?> getRecordById(String userId, String recordId) async {
+    try {
+      // Fixed: Added /medical prefix
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        return MedicalRecordDisplay.fromJson(responseData['data']);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception('Failed to load record');
+      }
+    } catch (e) {
+      throw Exception('Error fetching record: $e');
+    }
+  }
+  
+  Future<MedicalRecordDisplay> updateRecord(
+    String userId, 
+    String recordId, 
+    {String? title, String? note}
+  ) async {
+    try {
+      Map<String, dynamic> updateData = {};
+      if (title != null) updateData['title'] = title;
+      if (note != null) updateData['note'] = note;
+      
+      // Fixed: Added /medical prefix
+      final headers = await _getAuthHeaders();
+      final response = await http.put(
+        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        headers: headers,
+        body: json.encode(updateData),
+      );
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        return MedicalRecordDisplay.fromJson(responseData['data']);
+      } else {
+        throw Exception('Failed to update record');
+      }
+    } catch (e) {
+      throw Exception('Error updating record: $e');
+    }
+  }
+  
+  Future<bool> deleteRecord(String userId, String recordId) async {
+    try {
+      // Fixed: Added /medical prefix
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        headers: headers,
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Error deleting record: $e');
+    }
+  }
+}

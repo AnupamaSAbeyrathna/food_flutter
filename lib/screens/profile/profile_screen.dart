@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'edit_profile_screen.dart';
 import 'meal_screen.dart';
+import '../medical_record/medical_records_list_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -144,6 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Color? iconColor,
   }) {
     return Container(
+      height: 80, // Fixed height for consistency
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -175,6 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   title,
@@ -192,6 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontWeight: FontWeight.w600,
                     color: value.isEmpty ? Colors.grey[400] : Colors.black87,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -273,6 +277,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildFeatureCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required Color iconColor,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 180, // Increased height from 160 to 180
+          padding: const EdgeInsets.all(16), // Reduced padding from 20 to 16
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.08),
+                spreadRadius: 1,
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12), // Reduced from 14 to 12
+                      decoration: BoxDecoration(
+                        color: iconColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: iconColor,
+                        size: 24, // Reduced from 28 to 24
+                      ),
+                    ),
+                    const SizedBox(height: 12), // Reduced from 16 to 12
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15, // Reduced from 16 to 15
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12, // Reduced from 13 to 12
+                        color: Colors.grey[600],
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'Open',
+                    style: TextStyle(
+                      fontSize: 12, // Reduced from 13 to 12
+                      color: iconColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: iconColor,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,10 +414,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                     flexibleSpace: FlexibleSpaceBar(
-                      title: const Text(
-                        'Profile',
-                        style: TextStyle(color: Colors.white),
-                      ),
                       background: Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -434,58 +530,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EditProfileScreen(),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                const SizedBox(height: 32),
+                // Main Feature Cards
+                Row(
+                  children: [
+                    _buildFeatureCard(
+                      icon: Icons.restaurant_menu,
+                      title: 'Meal Data',
+                      subtitle: 'Track your meals and nutrition',
+                      iconColor: Colors.orange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MealScreen(),
+                          ),
+                        );
+                      },
                     ),
-                    icon: const Icon(Icons.edit),
-                    label: const Text(
-                      'Edit Profile',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    const SizedBox(width: 16),
+                    _buildFeatureCard(
+                      icon: Icons.medical_information,
+                      title: 'Medical Records',
+                      subtitle: 'Manage your health records',
+                      iconColor: Colors.red,
+                      onTap: () {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MedicalRecordsListScreen(userId: user.uid),
+                            ),
+                          );
+                        }
+                      },
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => MealScreen(),
-                        ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    icon: const Icon(Icons.fastfood),
-                    label: const Text(
-                      'View Meal Data',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -575,6 +656,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 24),
 
+          // Main Features Section
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildFeatureCard(
+                icon: Icons.restaurant_menu,
+                title: 'Meal Data',
+                subtitle: 'Track your meals and nutrition',
+                iconColor: Colors.orange,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => MealScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 16),
+              _buildFeatureCard(
+                icon: Icons.medical_information,
+                title: 'Medical Records',
+                subtitle: 'Manage your health records',
+                iconColor: Colors.red,
+                onTap: () {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MedicalRecordsListScreen(userId: user.uid),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
           // Health Metrics Section
           const Text(
             'Health Metrics',
@@ -618,57 +747,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           // Special Diseases
           _buildSpecialDiseasesChips(userData['specialDiseases']?.toString()),
-          const SizedBox(height: 24),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EditProfileScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.edit),
-                  label: const Text('Edit Profile'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MealScreen(),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(Icons.fastfood),
-                  label: const Text('Meal Data'),
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 100), // Space for FAB
         ],
       ),

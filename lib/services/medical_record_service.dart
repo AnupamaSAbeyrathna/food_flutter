@@ -6,7 +6,7 @@ import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
 
 class MedicalRecordService {
-  static const String baseUrl = 'http://192.168.1.7:8000';
+  static const String baseUrl = 'http://192.168.107.72:8000';
 
   Future<Map<String, dynamic>> analyzeMedicalRecord({
     required File imageFile,
