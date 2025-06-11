@@ -55,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     },
     {
       'title': 'Medical Records',
-      'subtitle': 'Take a photo',
+      'subtitle': 'Upload files',
       'icon': Icons.medical_services_outlined,
       'color': Colors.green,
       'gradient': [Colors.green[400]!, Colors.green[600]!],
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 1.2,
+                          childAspectRatio: 1.3, // Increased from 1.2 to give more height
                         ),
                     itemCount: _quickActions.length,
                     itemBuilder: (context, index) {
@@ -408,23 +408,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   color: Colors.white,
                                 ),
                                 const SizedBox(height: 12),
-                                Text(
-                                  action['title'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                Flexible( // Added Flexible to prevent overflow
+                                  child: Text(
+                                    action['title'],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2, // Allow up to 2 lines
+                                    overflow: TextOverflow.ellipsis, // Handle overflow gracefully
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  action['subtitle'],
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
-                                    fontSize: 12,
+                                Flexible( // Added Flexible for subtitle too
+                                  child: Text(
+                                    action['subtitle'],
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.8),
+                                      fontSize: 12,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
                               ],
                             ),

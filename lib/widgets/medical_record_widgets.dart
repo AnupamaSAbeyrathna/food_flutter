@@ -78,7 +78,7 @@ class ImageSelectionWidget extends StatelessWidget {
 }
 
 class RecordTypeSelector extends StatelessWidget {
-  final List<RecordType> recordTypes;
+  final List<Map<String, dynamic>> recordTypes;
   final String selectedType;
   final Function(String) onTypeSelected;
 
@@ -89,15 +89,33 @@ class RecordTypeSelector extends StatelessWidget {
     required this.onTypeSelected,
   }) : super(key: key);
 
+  Color _getTypeColor(String key) {
+    switch (key) {
+      case 'prescription':
+        return Colors.blue;
+      case 'lab_result':
+        return Colors.green;
+      case 'medical_report':
+        return Colors.orange;
+      case 'other':
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: recordTypes.map((type) {
-        final isSelected = selectedType == type.value;
+        final typeKey = type['key'] as String;
+        final typeColor = _getTypeColor(typeKey);
+        final isSelected = selectedType == typeKey;
+        
         return GestureDetector(
-          onTap: () => onTypeSelected(type.value),
+          onTap: () => onTypeSelected(typeKey),
           child: Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -105,11 +123,11 @@ class RecordTypeSelector extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? type.color.withOpacity(0.1)
+                  ? typeColor.withOpacity(0.1)
                   : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? type.color : Colors.grey[300]!,
+                color: isSelected ? typeColor : Colors.grey[300]!,
                 width: isSelected ? 2 : 1,
               ),
               boxShadow: [
@@ -124,15 +142,15 @@ class RecordTypeSelector extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  type.icon,
-                  color: isSelected ? type.color : Colors.grey[600],
+                  type['icon'] as IconData,
+                  color: isSelected ? typeColor : Colors.grey[600],
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  type.label,
+                  type['label'] as String,
                   style: TextStyle(
-                    color: isSelected ? type.color : Colors.grey[700],
+                    color: isSelected ? typeColor : Colors.grey[700],
                     fontWeight: isSelected
                         ? FontWeight.w600
                         : FontWeight.w500,

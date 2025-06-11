@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/medical_record_display_model.dart';
+import '../utils/api_config.dart';
 
 class MedicalRecordsService {
-  static const String baseUrl = 'http://192.168.107.72:8000'; // Replace with your actual API URL
+  static const String baseUrl = ApiConfig.baseUrl;
   
   // Helper method to get auth headers
   Future<Map<String, String>> _getAuthHeaders() async {

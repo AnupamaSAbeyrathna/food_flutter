@@ -4,9 +4,10 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mime/mime.dart';
 import 'package:http_parser/http_parser.dart';
+import '../utils/api_config.dart';
 
 class MedicalRecordService {
-  static const String baseUrl = 'http://192.168.107.72:8000';
+  static const String baseUrl = ApiConfig.baseUrl;
 
   Future<Map<String, dynamic>> analyzeMedicalRecord({
     required File imageFile,

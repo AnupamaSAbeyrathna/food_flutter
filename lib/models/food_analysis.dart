@@ -1,40 +1,38 @@
 class FoodAnalysis {
-  final String foodStatus;
+  //final String foodStatus;
   final List<String> detectedFoods;
   final Map<String, dynamic> nutrition;
-  final Map<String, dynamic> totalToday;
-  final Map<String, dynamic> totalThisMeal;
+  // final Map<String, dynamic> totalToday;
+  // final Map<String, dynamic> totalThisMeal;
 
   FoodAnalysis({
-    required this.foodStatus,
+    // required this.foodStatus,
     required this.detectedFoods,
     required this.nutrition,
-    required this.totalToday,
-    required this.totalThisMeal,
+    // required this.totalToday,
+    // required this.totalThisMeal,
   });
 
   factory FoodAnalysis.fromJson(Map<String, dynamic> json) {
     return FoodAnalysis(
-      foodStatus: json['food_status'],
+      // foodStatus: json['food_status'],
       detectedFoods: List<String>.from(json['detected_foods']),
       nutrition: Map<String, dynamic>.from(json['nutrition']),
-      totalToday: Map<String, dynamic>.from(json['total_today']),
-      totalThisMeal: Map<String, dynamic>.from(json['total_this_meal']),
+      // totalToday: Map<String, dynamic>.from(json['total_today']),
+      // totalThisMeal: Map<String, dynamic>.from(json['total_this_meal']),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'food_status': foodStatus,
+      // 'food_status': foodStatus,
       'detected_foods': detectedFoods,
       'nutrition': nutrition,
-      'total_today': totalToday,
-      'total_this_meal': totalThisMeal,
+      // 'total_today': totalToday,
+      // 'total_this_meal': totalThisMeal,
     };
   }
 }
-
-
 
 class NutritionInfo {
   final double calories;

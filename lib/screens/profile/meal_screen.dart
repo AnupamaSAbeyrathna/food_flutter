@@ -89,19 +89,32 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildStatsCard(List<QueryDocumentSnapshot> meals) {
-    int totalCalories = 0;
+    int todayCalories = 0;
     int totalMeals = meals.length;
+    
+    // Get today's date range
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(Duration(days: 1));
 
     for (var meal in meals) {
       var data = meal.data() as Map;
-      var nutrition = data['nutrition'] as Map?;
-      if (nutrition != null) {
-        // Sum calories from all foods in the nutrition map
-        nutrition.forEach((foodName, foodData) {
-          if (foodData is Map && foodData['calories'] != null) {
-            totalCalories += (foodData['calories'] as num).round();
+      var timestamp = data['timestamp'] as Timestamp?;
+      
+      // Check if meal is from today
+      if (timestamp != null) {
+        final mealDate = timestamp.toDate();
+        if (mealDate.isAfter(todayStart) && mealDate.isBefore(todayEnd)) {
+          var nutrition = data['nutrition'] as Map?;
+          if (nutrition != null) {
+            // Sum calories from all foods in the nutrition map for today's meals only
+            nutrition.forEach((foodName, foodData) {
+              if (foodData is Map && foodData['calories'] != null) {
+                todayCalories += (foodData['calories'] as num).round();
+              }
+            });
           }
-        });
+        }
       }
     }
 
@@ -128,7 +141,7 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
         children: [
           _buildStatItem(
             'Today\'s Calories',
-            totalCalories.toString(),
+            todayCalories.toString(),
             Icons.local_fire_department,
           ),
           Container(height: 40, width: 1, color: Colors.white30),
