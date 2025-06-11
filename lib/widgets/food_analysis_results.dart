@@ -56,10 +56,6 @@ class _FoodAnalysisResultsState extends State<FoodAnalysisResults>
             _buildSuccessHeader(),
             const SizedBox(height: 20),
             
-            // Food Status Card
-            _buildFoodStatusCard(),
-            const SizedBox(height: 20),
-            
             // Detected Foods Card
             _buildDetectedFoodsCard(),
             const SizedBox(height: 20),
@@ -125,51 +121,6 @@ class _FoodAnalysisResultsState extends State<FoodAnalysisResults>
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFoodStatusCard() {
-    final statusColor = _getStatusColor(widget.result.foodStatus);
-    final statusIcon = _getStatusIcon(widget.result.foodStatus);
-    
-    return _buildGlassCard(
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(statusIcon, color: statusColor, size: 28),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Food Status',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.result.foodStatus.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
                   ),
                 ),
               ],
@@ -511,32 +462,6 @@ class _FoodAnalysisResultsState extends State<FoodAnalysisResults>
         ],
       ),
     );
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'healthy':
-        return const Color(0xFF10B981);
-      case 'moderate':
-        return const Color(0xFFF59E0B);
-      case 'unhealthy':
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFF6B7280);
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'healthy':
-        return Icons.favorite_rounded;
-      case 'moderate':
-        return Icons.warning_rounded;
-      case 'unhealthy':
-        return Icons.error_rounded;
-      default:
-        return Icons.help_rounded;
-    }
   }
 
   IconData _getNutrientIcon(String nutrient) {

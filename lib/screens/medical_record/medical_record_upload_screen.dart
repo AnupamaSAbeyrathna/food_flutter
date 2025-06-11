@@ -59,7 +59,10 @@ class _MedicalRecordScreenState extends State<MedicalRecordScreen>
     );
   }
 
-  Future<void> _pickImage(MedicalRecordProvider provider, ImageSource source) async {
+  Future<void> _pickImage(
+    MedicalRecordProvider provider,
+    ImageSource source,
+  ) async {
     try {
       await provider.pickImage(source);
     } catch (e) {
@@ -131,9 +134,10 @@ class _MedicalRecordScreenState extends State<MedicalRecordScreen>
                             selectedImage: provider.selectedImage!,
                             title: _titleController.text,
                             type: provider.selectedType,
-                            note: _noteController.text.isNotEmpty 
-                                ? _noteController.text 
-                                : null,
+                            note:
+                                _noteController.text.isNotEmpty
+                                    ? _noteController.text
+                                    : null,
                             analysisResult: provider.analysisResult,
                             getTypeLabel: provider.getTypeLabel,
                             onReset: () => _resetForm(provider),
@@ -162,10 +166,7 @@ class _MedicalRecordScreenState extends State<MedicalRecordScreen>
       ),
       title: const Text(
         'Medical Records',
-        style: TextStyle(
-          color: Colors.black87,
-          fontWeight: FontWeight.bold,
-        ),
+        style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
       ),
       actions: [
         Consumer<MedicalRecordProvider>(
@@ -185,93 +186,145 @@ class _MedicalRecordScreenState extends State<MedicalRecordScreen>
   }
 
   Widget _buildInputForm(MedicalRecordProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Image Selection Section
-        const SectionTitle('Select Image'),
-        const SizedBox(height: 16),
-        ImageSelectionWidget(
-          selectedImage: provider.selectedImage,
-          onTap: () => _showImageSourceDialog(provider),
-        ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Image Selection Section
+      const SectionTitle('Select Image'),
+      const SizedBox(height: 16),
+      ImageSelectionWidget(
+        selectedImage: provider.selectedImage,
+        onTap: () => _showImageSourceDialog(provider),
+      ),
 
-        const SizedBox(height: 32),
+      const SizedBox(height: 32),
 
-        // Record Type Selection
-        const SectionTitle('Record Type'),
-        const SizedBox(height: 16),
-        RecordTypeSelector(
-          recordTypes: provider.recordTypes,
-          selectedType: provider.selectedType,
-          onTypeSelected: provider.setSelectedType,
-        ),
-
-        const SizedBox(height: 32),
-
-        // Title Input
-        const SectionTitle('Title'),
-        const SizedBox(height: 16),
-        CustomTextField(
-          controller: _titleController,
-          hintText: 'Enter record title',
-        ),
-
-        const SizedBox(height: 24),
-
-        // Note Input
-        const SectionTitle('Note (Optional)'),
-        const SizedBox(height: 16),
-        CustomTextField(
-          controller: _noteController,
-          hintText: 'Add any additional notes...',
-          maxLines: 3,
-        ),
-
-        const SizedBox(height: 32),
-
-        // Analyze Button
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton(
-            onPressed: provider.isLoading ? null : () => _analyzeImage(provider),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 4,
+      // Record Type Selection - DEBUG VERSION
+      const SectionTitle('Record Type'),
+      const SizedBox(height: 16),
+      
+      // Add debug prints to see what's happening
+      Builder(
+        builder: (context) {
+          print('=== DEBUG INFO ===');
+          print('Selected type: ${provider.selectedType}');
+          print('Selected type type: ${provider.selectedType.runtimeType}');
+          
+          // Check each record type
+          for (var recordType in provider.recordTypes) {
+            print('Record type value: ${recordType.value}');
+            print('Record type label: ${recordType.label}');
+            try {
+              var mapped = recordType.toMap();
+              print('Mapped successfully: $mapped');
+            } catch (e) {
+              print('Error mapping record type: $e');
+            }
+          }
+          
+          // Try to create the mapped list
+          List<Map<String, dynamic>> mappedTypes = [];
+          try {
+            mappedTypes = provider.recordTypes.map((e) => e.toMap()).toList();
+            print('All types mapped successfully');
+          } catch (e) {
+            print('Error mapping types: $e');
+          }
+          
+          return Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: provider.isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Colors.white,
+            child: Column(
+              children: [
+                // Text('Debug: Selected Type = ${provider.selectedType}'),
+                // Text('Debug: Type count = ${provider.recordTypes.length}'),
+                // Temporarily show a simple dropdown instead of RecordTypeSelector
+                DropdownButton<String>(
+                  value: provider.selectedType,
+                  items: provider.recordTypes.map((type) {
+                    return DropdownMenuItem<String>(
+                      value: type.value,
+                      child: Text('${type.label} (${type.value})'),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      provider.setSelectedType(newValue);
+                    }
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+
+      const SizedBox(height: 32),
+
+      // Title Input
+      const SectionTitle('Title'),
+      const SizedBox(height: 16),
+      CustomTextField(
+        controller: _titleController,
+        hintText: 'Enter record title',
+      ),
+
+      const SizedBox(height: 24),
+
+      // Note Input
+      const SectionTitle('Note (Optional)'),
+      const SizedBox(height: 16),
+      CustomTextField(
+        controller: _noteController,
+        hintText: 'Add any additional notes...',
+        maxLines: 3,
+      ),
+
+      const SizedBox(height: 32),
+
+      // Analyze Button
+      SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: provider.isLoading ? null : () => _analyzeImage(provider),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 4,
+          ),
+          child: provider.isLoading
+              ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.analytics_outlined),
+                    SizedBox(width: 8),
+                    Text(
+                      'Analyze Medical Record',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.analytics_outlined),
-                      SizedBox(width: 8),
-                      Text(
-                        'Analyze Medical Record',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+                  ],
+                ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }

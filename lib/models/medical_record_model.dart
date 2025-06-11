@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class MedicalRecord {
   final String id;
   final String title;
@@ -54,4 +56,13 @@ class RecordType {
     required this.icon,
     required this.color,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'key': value,        
+      'label': label,
+      'icon': icon,        
+      'color': color,    
+    };
+  }
 }

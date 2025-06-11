@@ -18,7 +18,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
 
   final PageController _pageController = PageController();
-  int _currentPage = 0;
+  //int _currentPage = 0;
 
   // Sample data for recent analysis and quick actions
   final List<Map<String, dynamic>> _recentAnalyses = [
