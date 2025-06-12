@@ -8,6 +8,11 @@ class MedicalRecordDisplay {
   final DateTime updatedAt;
   final List<String> imageUrls;
   final MedicalRecordMetadata metadata;
+  
+  // Family member display information
+  final String familyMemberId;
+  final String familyMemberName;
+  final String familyMemberRelationship;
 
   MedicalRecordDisplay({
     required this.id,
@@ -18,6 +23,9 @@ class MedicalRecordDisplay {
     required this.updatedAt,
     required this.imageUrls,
     required this.metadata,
+    required this.familyMemberId,
+    required this.familyMemberName,
+    required this.familyMemberRelationship,
   });
 
   factory MedicalRecordDisplay.fromJson(Map<String, dynamic> json) {
@@ -30,6 +38,9 @@ class MedicalRecordDisplay {
       updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
       imageUrls: List<String>.from(json['imageUrls'] ?? []),
       metadata: MedicalRecordMetadata.fromJson(json['metadata'] ?? {}),
+      familyMemberId: json['familyMemberId'] ?? '',
+      familyMemberName: json['familyMemberName'] ?? '',
+      familyMemberRelationship: json['familyMemberRelationship'] ?? '',
     );
   }
 
@@ -43,24 +54,81 @@ class MedicalRecordDisplay {
       'updatedAt': updatedAt.toIso8601String(),
       'imageUrls': imageUrls,
       'metadata': metadata.toJson(),
+      'familyMemberId': familyMemberId,
+      'familyMemberName': familyMemberName,
+      'familyMemberRelationship': familyMemberRelationship,
     };
   }
 
+  // Display-specific getters
   String get typeDisplayName {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'labresult':
         return 'Lab Result';
       case 'prescription':
         return 'Prescription';
       case 'medication':
         return 'Medication';
+      case 'xray':
+        return 'X-Ray';
+      case 'mri':
+        return 'MRI';
+      case 'ct':
+        return 'CT Scan';
+      case 'ultrasound':
+        return 'Ultrasound';
       default:
-        return type.replaceAll('', ' ').toUpperCase();
+        return type.replaceAll('_', ' ').split(' ')
+            .map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : '')
+            .join(' ');
     }
   }
 
   bool get hasCriticalResults {
     return metadata.criticalResults?.isNotEmpty ?? false;
+  }
+
+  bool get isSelfRecord => familyMemberRelationship.toLowerCase() == 'self';
+
+  String get patientDisplayName {
+    return isSelfRecord ? 'You' : familyMemberName;
+  }
+
+  String get patientDetailDisplayName {
+    if (isSelfRecord) return 'Your Record';
+    return '$familyMemberName\'s Record ($familyMemberRelationship)';
+  }
+
+  String get formattedDate {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
+  // Status indicators for UI
+  String get statusColor {
+    if (hasCriticalResults) return 'red';
+    if (metadata.analysisStatus == 'success') return 'green';
+    if (metadata.analysisStatus == 'pending') return 'orange';
+    return 'grey';
+  }
+
+  bool get needsAttention => hasCriticalResults;
+  
+  String get statusText {
+    if (hasCriticalResults) return 'Critical Results';
+    if (metadata.analysisStatus == 'success') return 'Analyzed';
+    if (metadata.analysisStatus == 'pending') return 'Processing';
+    return 'Not Analyzed';
   }
 }
 
@@ -72,6 +140,7 @@ class MedicalRecordMetadata {
   final String? notes;
   final String? testType;
   final String? testDate;
+  final String? prescriptionDate;
   final List<TestResult>? testResults;
   final List<TestResult>? criticalResults;
   final List<Medication>? medications;
@@ -88,6 +157,7 @@ class MedicalRecordMetadata {
     this.notes,
     this.testType,
     this.testDate,
+    this.prescriptionDate,
     this.testResults,
     this.criticalResults,
     this.medications,
@@ -106,6 +176,7 @@ class MedicalRecordMetadata {
       notes: json['notes'],
       testType: json['testType'],
       testDate: json['testDate'],
+      prescriptionDate: json['prescriptionDate'],
       testResults: (json['testResults'] as List?)
           ?.map((e) => TestResult.fromJson(e))
           .toList(),
@@ -131,6 +202,7 @@ class MedicalRecordMetadata {
       'notes': notes,
       'testType': testType,
       'testDate': testDate,
+      'prescriptionDate': prescriptionDate,
       'testResults': testResults?.map((e) => e.toJson()).toList(),
       'criticalResults': criticalResults?.map((e) => e.toJson()).toList(),
       'medications': medications?.map((e) => e.toJson()).toList(),
@@ -139,6 +211,29 @@ class MedicalRecordMetadata {
       'expiryDate': expiryDate,
       'aiAnalysis': aiAnalysis,
     };
+  }
+
+  // Display helpers
+  String get facilityDisplayName => facility ?? 'Unknown Facility';
+  String get doctorDisplayName => doctorName ?? 'Unknown Doctor';
+  int get medicationCount => medications?.length ?? 0;
+  int get testResultCount => testResults?.length ?? 0;
+  int get criticalResultCount => criticalResults?.length ?? 0;
+  
+  bool get hasResults => testResults?.isNotEmpty ?? false;
+  bool get hasMedications => medications?.isNotEmpty ?? false;
+  bool get isAnalyzed => analysisStatus == 'success';
+  
+  String get medicationSummary {
+    if (medications?.isEmpty ?? true) return 'No medications';
+    if (medications!.length == 1) return '1 medication';
+    return '${medications!.length} medications';
+  }
+  
+  String get testResultSummary {
+    if (testResults?.isEmpty ?? true) return 'No test results';
+    if (testResults!.length == 1) return '1 test result';
+    return '${testResults!.length} test results';
   }
 }
 
@@ -177,8 +272,40 @@ class TestResult {
     };
   }
 
-  bool get isAbnormal {
-    return status.toLowerCase() != 'normal';
+  bool get isAbnormal => status.toLowerCase() != 'normal';
+  bool get isCritical => status.toLowerCase().contains('critical') || 
+                        status.toLowerCase().contains('high') || 
+                        status.toLowerCase().contains('low');
+  
+  String get displayValue => value.isEmpty ? 'N/A' : '$value${unit.isNotEmpty ? ' $unit' : ''}';
+  
+  String get statusColor {
+    switch (status.toLowerCase()) {
+      case 'normal':
+        return 'green';
+      case 'high':
+      case 'low':
+        return 'orange';
+      case 'critical':
+        return 'red';
+      default:
+        return 'grey';
+    }
+  }
+  
+  String get statusDisplayName {
+    switch (status.toLowerCase()) {
+      case 'normal':
+        return 'Normal';
+      case 'high':
+        return 'High';
+      case 'low':
+        return 'Low';
+      case 'critical':
+        return 'Critical';
+      default:
+        return status;
+    }
   }
 }
 
@@ -215,5 +342,44 @@ class Medication {
       'duration': duration,
       'instructions': instructions,
     };
+  }
+
+  // Display helpers
+  String get displayName => name.isEmpty ? 'Unknown Medication' : name;
+  
+  String get dosageDisplay {
+    if (dosage == null || dosage!.isEmpty) return '';
+    return dosage!;
+  }
+  
+  String get frequencyDisplay {
+    if (frequency == null || frequency!.isEmpty) return '';
+    switch (frequency!.toUpperCase()) {
+      case 'QD':
+        return 'Once daily';
+      case 'BID':
+        return 'Twice daily';
+      case 'TID':
+        return 'Three times daily';
+      case 'QID':
+        return 'Four times daily';
+      default:
+        return frequency!;
+    }
+  }
+  
+  String get fullInstructions {
+    final parts = <String>[];
+    if (dosageDisplay.isNotEmpty) parts.add(dosageDisplay);
+    if (frequencyDisplay.isNotEmpty) parts.add(frequencyDisplay);
+    if (instructions != null && instructions!.isNotEmpty) parts.add(instructions!);
+    return parts.join(' • ');
+  }
+  
+  String get shortDescription {
+    final parts = <String>[];
+    if (dosageDisplay.isNotEmpty) parts.add(dosageDisplay);
+    if (frequencyDisplay.isNotEmpty) parts.add(frequencyDisplay);
+    return parts.isEmpty ? name : '$name - ${parts.join(' ')}';
   }
 }

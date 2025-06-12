@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/medical_record_model.dart';
+import '../models/family_member.dart';
 import '../services/medical_record_service.dart';
 
 class MedicalRecordProvider with ChangeNotifier {
@@ -76,6 +77,7 @@ class MedicalRecordProvider with ChangeNotifier {
   Future<void> analyzeImage({
     required String title,
     String? note,
+    required FamilyMember familyMember,
   }) async {
     if (_selectedImage == null) {
       throw Exception('Please select an image first');
@@ -94,6 +96,7 @@ class MedicalRecordProvider with ChangeNotifier {
         type: _selectedType,
         title: title.trim(),
         note: note?.trim(),
+        familyMember: familyMember,
       );
 
       _analysisResult = result;
