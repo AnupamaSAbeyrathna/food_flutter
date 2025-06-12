@@ -74,6 +74,7 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
     try {
       await _service.updateRecord(
         widget.userId,
+        widget.record.familyMemberId,
         widget.record.id,
         title: _titleController.text.trim(),
         note: _noteController.text.trim(),

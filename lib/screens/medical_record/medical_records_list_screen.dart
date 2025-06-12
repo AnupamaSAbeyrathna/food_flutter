@@ -794,6 +794,7 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
                 builder: (context) => MedicalRecordDetailScreen(
                   userId: widget.userId,
                   recordId: record.id,
+                  familyMemberId: record.familyMemberId,
                 ),
               ),
             );

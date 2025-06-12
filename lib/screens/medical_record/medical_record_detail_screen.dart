@@ -7,11 +7,13 @@ import 'medical_record_edit_screen.dart';
 class MedicalRecordDetailScreen extends StatefulWidget {
   final String userId;
   final String recordId;
+  final String? familyMemberId;
   
   const MedicalRecordDetailScreen({
     Key? key,
     required this.userId,
     required this.recordId,
+    this.familyMemberId,
   }) : super(key: key);
   
   @override
@@ -48,7 +50,9 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen>
   Future<void> _loadRecord() async {
     setState(() => _isLoading = true);
     try {
-      final record = await _service.getRecordById(widget.userId, widget.recordId);
+      final record = widget.familyMemberId != null
+          ? await _service.getRecordForMember(widget.userId, widget.familyMemberId!, widget.recordId)
+          : await _service.getRecordById(widget.userId, widget.familyMemberId ?? '', widget.recordId);
       setState(() {
         _record = record;
         _isLoading = false;
@@ -125,8 +129,14 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen>
     
     if (confirm == true) {
       try {
-        await _service.deleteRecord(widget.userId, widget.recordId);
-        Navigator.pop(context, true);
+        final success = widget.familyMemberId != null
+            ? await _service.deleteRecordForMember(widget.userId, widget.familyMemberId!, widget.recordId)
+            : await _service.deleteRecord(widget.userId, widget.familyMemberId ?? '', widget.recordId);
+        if (success) {
+          Navigator.pop(context, true);
+        } else {
+          _showErrorSnackBar('Failed to delete record');
+        }
       } catch (e) {
         _showErrorSnackBar('Error deleting record: $e');
       }
@@ -140,6 +150,7 @@ class _MedicalRecordDetailScreenState extends State<MedicalRecordDetailScreen>
         builder: (context) => MedicalRecordEditScreen(
           userId: widget.userId,
           record: _record!,
+          //familyMemberId: widget.familyMemberId,
         ),
       ),
     );

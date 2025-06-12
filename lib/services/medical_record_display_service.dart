@@ -46,12 +46,12 @@ class MedicalRecordsService {
       throw Exception('Error fetching records: $e');
     }
   }
-  
-  Future<MedicalRecordDisplay?> getRecordById(String userId, String recordId) async {
+
+  Future<MedicalRecordDisplay?> getRecordById(String userId, String memberId, String recordId) async {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
         headers: headers,
       );
       
@@ -70,6 +70,7 @@ class MedicalRecordsService {
   
   Future<MedicalRecordDisplay> updateRecord(
     String userId, 
+    String memberId,
     String recordId, 
     {String? title, String? note}
   ) async {
@@ -80,7 +81,7 @@ class MedicalRecordsService {
       
       final headers = await _getAuthHeaders();
       final response = await http.put(
-        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
         headers: headers,
         body: json.encode(updateData),
       );
@@ -95,12 +96,12 @@ class MedicalRecordsService {
       throw Exception('Error updating record: $e');
     }
   }
-  
-  Future<bool> deleteRecord(String userId, String recordId) async {
+
+  Future<bool> deleteRecord(String userId, String memberId, String recordId) async {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.delete(
-        Uri.parse('$baseUrl/medical/users/$userId/medical-records/$recordId'),
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
         headers: headers,
       );
       
@@ -110,11 +111,11 @@ class MedicalRecordsService {
     }
   }
 
-  Future<List<MedicalRecordDisplay>> getAllFamilyRecords() async {
+  Future<List<MedicalRecordDisplay>> getAllFamilyRecords(String memberId) async {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/medical/members/records'),
+        Uri.parse('$baseUrl/medical/family-members/$memberId/medical-records'),
         headers: headers,
       );
 
@@ -147,6 +148,71 @@ class MedicalRecordsService {
       }
     } catch (e) {
       throw Exception('Error fetching records for member: $e');
+    }
+  }
+
+  // NEW FAMILY MEMBER RECORD METHODS
+  Future<MedicalRecordDisplay?> getRecordForMember(String userId, String memberId, String recordId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
+        headers: headers,
+      );
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        return MedicalRecordDisplay.fromJson(responseData['data']);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw Exception('Failed to load family member record');
+      }
+    } catch (e) {
+      throw Exception('Error fetching family member record: $e');
+    }
+  }
+
+  Future<bool> deleteRecordForMember(String userId, String memberId, String recordId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
+        headers: headers,
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      throw Exception('Error deleting family member record: $e');
+    }
+  }
+
+  Future<MedicalRecordDisplay> updateRecordForMember(
+    String userId, 
+    String memberId,
+    String recordId, 
+    {String? title, String? note}
+  ) async {
+    try {
+      Map<String, dynamic> updateData = {};
+      if (title != null) updateData['title'] = title;
+      if (note != null) updateData['note'] = note;
+      
+      final headers = await _getAuthHeaders();
+      final response = await http.put(
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
+        headers: headers,
+        body: json.encode(updateData),
+      );
+      
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(response.body);
+        return MedicalRecordDisplay.fromJson(responseData['data']);
+      } else {
+        throw Exception('Failed to update family member record');
+      }
+    } catch (e) {
+      throw Exception('Error updating family member record: $e');
     }
   }
 }
