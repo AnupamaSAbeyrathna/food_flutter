@@ -130,11 +130,11 @@ class MedicalRecordsService {
     }
   }
 
-  Future<List<MedicalRecordDisplay>> getRecordsForMember(String memberId) async {
+  Future<List<MedicalRecordDisplay>> getRecordsForMember(String userId, String memberId) async {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/medical/members/$memberId/records'),
+        Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records'),
         headers: headers,
       );
 

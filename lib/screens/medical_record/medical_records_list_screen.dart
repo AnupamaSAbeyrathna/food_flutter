@@ -2,12 +2,14 @@
 import 'package:flutter/material.dart';
 import '../../models/medical_record_display_model.dart';
 import '../../services/medical_record_display_service.dart';
+import '../../models/family_member.dart';
+import '../../services/family_member_service.dart' as family_service;
 import 'medical_record_detail_screen.dart';
 
 class MedicalRecordsListScreen extends StatefulWidget {
   final String userId;
   
-  const MedicalRecordsListScreen({Key? key, required this.userId}) : super(key: key);
+  const MedicalRecordsListScreen({super.key, required this.userId});
   
   @override
   State<MedicalRecordsListScreen> createState() => _MedicalRecordsListScreenState();
@@ -16,11 +18,15 @@ class MedicalRecordsListScreen extends StatefulWidget {
 class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
     with TickerProviderStateMixin {
   final MedicalRecordsService _service = MedicalRecordsService();
+  final family_service.FamilyMemberService _familyService = family_service.FamilyMemberService();
   final TextEditingController _searchController = TextEditingController();
   
   List<MedicalRecordDisplay> _records = [];
   List<MedicalRecordDisplay> _filteredRecords = [];
+  List<FamilyMember> _familyMembers = [];
+  FamilyMember? _selectedMember;
   bool _isLoading = true;
+  bool _isLoadingMembers = true;
   String _searchQuery = '';
   String _selectedType = '';
   DateTimeRange? _dateRange;
@@ -37,13 +43,17 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
     {'value': 'prescription', 'label': 'Prescription', 'icon': Icons.medication, 'color': Colors.green},
     {'value': 'medication', 'label': 'Medication', 'icon': Icons.local_pharmacy, 'color': Colors.blue},
     {'value': 'lab_result', 'label': 'Lab Result', 'icon': Icons.science, 'color': Colors.orange},
+    {'value': 'xray', 'label': 'X-Ray', 'icon': Icons.medical_services, 'color': Colors.purple},
+    {'value': 'mri', 'label': 'MRI', 'icon': Icons.medical_information, 'color': Colors.teal},
+    {'value': 'ct', 'label': 'CT Scan', 'icon': Icons.scanner, 'color': Colors.indigo},
+    {'value': 'ultrasound', 'label': 'Ultrasound', 'icon': Icons.waves, 'color': Colors.cyan},
   ];
   
   @override
   void initState() {
     super.initState();
     _setupAnimations();
-    _loadRecords();
+    _loadFamilyMembers();
   }
   
   void _setupAnimations() {
@@ -73,20 +83,53 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
     _filterAnimationController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadFamilyMembers() async {
+    setState(() => _isLoadingMembers = true);
+    try {
+      final members = await _familyService.getFamilyMembers(widget.userId);
+      setState(() {
+        _familyMembers = members;
+        _isLoadingMembers = false;
+        // Auto-select the first member (usually "Self")
+        if (members.isNotEmpty) {
+          _selectedMember = members.first;
+          _loadRecords();
+        }
+      });
+    } catch (e) {
+      setState(() => _isLoadingMembers = false);
+      _showErrorSnackBar('Error loading family members: $e');
+    }
+  }
   
   Future<void> _loadRecords() async {
+    if (_selectedMember == null) return;
+    
     setState(() => _isLoading = true);
     try {
-      final records = await _service.getUserRecords(widget.userId);
+      final records = await _service.getRecordsForMember(widget.userId, _selectedMember!.id);
       setState(() {
         _records = records;
         _filteredRecords = records;
         _isLoading = false;
       });
+      _listAnimationController.reset();
       _listAnimationController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorSnackBar('Error loading records: $e');
+    }
+  }
+
+  void _onMemberChanged(FamilyMember? member) {
+    if (member != null && member != _selectedMember) {
+      setState(() {
+        _selectedMember = member;
+        _records = [];
+        _filteredRecords = [];
+      });
+      _loadRecords();
     }
   }
   
@@ -193,7 +236,7 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
         slivers: [
           // Custom App Bar
           SliverAppBar(
-            expandedHeight: 120,
+            expandedHeight: 140,
             floating: false,
             pinned: true,
             elevation: 0,
@@ -222,8 +265,11 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        SizedBox(height: 4),
                         Text(
-                          '${_filteredRecords.length} records found',
+                          _selectedMember != null 
+                              ? '${_filteredRecords.length} records for ${_selectedMember!.name}'
+                              : 'Loading...',
                           style: TextStyle(
                             color: Colors.white70,
                             fontSize: 14,
@@ -241,6 +287,11 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
                 onPressed: _loadRecords,
               ),
             ],
+          ),
+
+          // Family Member Selector
+          SliverToBoxAdapter(
+            child: _buildFamilyMemberSelector(),
           ),
           
           // Statistics Cards
@@ -268,6 +319,136 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
         ],
       ),
     );
+  }
+
+  Widget _buildFamilyMemberSelector() {
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: _isLoadingMembers
+          ? Container(
+              height: 60,
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+                ),
+              ),
+            )
+          : Row(
+              children: [
+                Icon(Icons.person, color: Colors.blue[600], size: 24),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Family Member',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      DropdownButtonHideUnderline(
+                        child: DropdownButton<FamilyMember>(
+                          value: _selectedMember,
+                          isExpanded: true,
+                          hint: Text('Select a family member'),
+                          items: _familyMembers.map((member) {
+                            return DropdownMenuItem<FamilyMember>(
+                              value: member,
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: _getMemberColor(member.relationship),
+                                    child: Text(
+                                      member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          member.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${member.relationship} • ${member.age} years, ${member.gender}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: _onMemberChanged,
+                          dropdownColor: Colors.white,
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Color _getMemberColor(String relationship) {
+    switch (relationship.toLowerCase()) {
+      case 'self':
+        return Colors.blue[600]!;
+      case 'spouse':
+        return Colors.pink[400]!;
+      case 'child':
+      case 'son':
+      case 'daughter':
+        return Colors.green[500]!;
+      case 'parent':
+      case 'father':
+      case 'mother':
+        return Colors.orange[500]!;
+      case 'sibling':
+      case 'brother':
+      case 'sister':
+        return Colors.purple[500]!;
+      default:
+        return Colors.grey[500]!;
+    }
   }
   
   Widget _buildStatisticsSection() {
@@ -544,7 +725,9 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
           Text(
             _searchQuery.isNotEmpty || _selectedType.isNotEmpty || _dateRange != null
                 ? 'Try adjusting your filters'
-                : 'Your medical records will appear here',
+                : _selectedMember != null 
+                    ? '${_selectedMember!.name} has no medical records yet'
+                    : 'Medical records will appear here',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -695,7 +878,7 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
                           Icon(Icons.calendar_today, size: 12, color: Colors.grey[500]),
                           SizedBox(width: 4),
                           Text(
-                            '${record.date.day}/${record.date.month}/${record.date.year}',
+                            record.formattedDate,
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
