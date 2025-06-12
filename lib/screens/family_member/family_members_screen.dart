@@ -13,7 +13,7 @@ class FamilyMembersScreen extends StatelessWidget {
     final membersRef = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
-        .collection('familyMembers');
+        .collection('family_members');
 
     return Scaffold(
       appBar: AppBar(

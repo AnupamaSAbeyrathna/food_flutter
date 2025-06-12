@@ -2,13 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/food_analysis_provider.dart';
 import 'screens/splash_screen.dart';
-import 'screens/main_screen.dart'; // Add this line
+import 'screens/main_screen.dart';
+import 'models/family_member.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize default self family member
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+  final familyService = FamilyMemberService();
+  if (userId != null) {
+    await familyService.initializeSelfMemberIfNeeded(userId);
+  }
+
   runApp(const MyApp());
 }
 

@@ -48,12 +48,12 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen> {
           ? FirebaseFirestore.instance
               .collection('users')
               .doc(widget.userId)
-              .collection('familyMembers')
+              .collection('family_members')
               .doc(widget.existingMember!.id)
           : FirebaseFirestore.instance
               .collection('users')
               .doc(widget.userId)
-              .collection('familyMembers')
+              .collection('family_members')
               .doc();
 
       final member = FamilyMember(

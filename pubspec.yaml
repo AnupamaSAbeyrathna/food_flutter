@@ -54,6 +54,8 @@ dependencies:
   firebase_storage: ^12.4.6
   #i For image uploads
   mime: ^1.0.4
+  #uuid for "self"
+  uuid: ^3.0.7
 
 
 dev_dependencies:
