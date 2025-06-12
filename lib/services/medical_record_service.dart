@@ -68,13 +68,13 @@ class MedicalRecordService {
       }
       
       // Add family member data
-      request.fields['familyMemberId'] = familyMember.id;
-      request.fields['familyMemberName'] = familyMember.name;
-      request.fields['familyMemberRelationship'] = familyMember.relationship;
-      request.fields['familyMemberAge'] = familyMember.age.toString();
-      request.fields['familyMemberGender'] = familyMember.gender;
+      request.fields['family_member_id'] = familyMember.id;
+      request.fields['family_member_name'] = familyMember.name;
+      request.fields['family_member_relationship'] = familyMember.relationship;
+      request.fields['family_member_age'] = familyMember.age.toString();
+      request.fields['family_member_gender'] = familyMember.gender;
       if (familyMember.healthNotes.isNotEmpty) {
-        request.fields['familyMemberHealthNotes'] = familyMember.healthNotes;
+        request.fields['family_member_health_notes'] = familyMember.healthNotes;
       }
 
       request.headers['Authorization'] = 'Bearer $token';

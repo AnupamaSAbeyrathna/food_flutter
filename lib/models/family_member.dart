@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart'; // Add this dependency to pubspec.yaml
 
 class FamilyMember {
-  final String id;
+  String id;
   final String name;
   final int age;
   final String gender;

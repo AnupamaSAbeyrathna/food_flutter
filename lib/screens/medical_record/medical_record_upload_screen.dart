@@ -5,7 +5,7 @@ import '../../theme.dart';
 import '../../providers/medical_record_provider.dart';
 import '../../widgets/medical_record_widgets.dart';
 import '../../models/family_member.dart';
-//import '../../services/family_member_service.dart';
+import '../../services/family_member_service.dart' as service;
 import 'package:firebase_auth/firebase_auth.dart';
 
 class MedicalRecordScreen extends StatefulWidget {
@@ -25,7 +25,7 @@ class _MedicalRecordScreenState extends State<MedicalRecordScreen>
   final TextEditingController _noteController = TextEditingController();
 
   // Family member related variables
-  final FamilyMemberService _familyMemberService = FamilyMemberService();
+  final service.FamilyMemberService _familyMemberService = service.FamilyMemberService();
   List<FamilyMember> _familyMembers = [];
   FamilyMember? _selectedFamilyMember;
   bool _loadingFamilyMembers = true;
