@@ -10,9 +10,28 @@ import '../models/family_member.dart';
 class MedicalRecordService {
   static const String baseUrl = ApiConfig.baseUrl;
 
+  // Helper method to get auth headers with proper content type
+  Future<Map<String, String>> _getAuthHeaders({bool isJson = true}) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
+    }
+    
+    final token = await user.getIdToken();
+    final headers = <String, String>{
+      'Authorization': 'Bearer $token',
+    };
+    
+    if (isJson) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    return headers;
+  }
+
   Future<Map<String, dynamic>> analyzeMedicalRecord({
     required File imageFile,
-    required String type, // "prescription" | "medication" | "test_result"
+    required String type, // "prescription" | "lab_result" | "medical_report" | "other"
     required String title,
     String? note,
     required FamilyMember familyMember,
@@ -26,7 +45,7 @@ class MedicalRecordService {
 
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/medical/analyze'), // Updated endpoint
+        Uri.parse('$baseUrl/medical/analyze'),
       );
 
       // Get MIME type from file path
@@ -44,50 +63,49 @@ class MedicalRecordService {
       // Add form fields
       request.fields['type'] = type;
       request.fields['title'] = title;
-      if (note != null) request.fields['note'] = note;
+      if (note != null && note.isNotEmpty) {
+        request.fields['note'] = note;
+      }
       
       // Add family member data
-      request.fields['family_member_id'] = familyMember.id;
-      request.fields['family_member_name'] = familyMember.name;
-      request.fields['family_member_relationship'] = familyMember.relationship;
-      request.fields['family_member_age'] = familyMember.age.toString();
-      request.fields['family_member_gender'] = familyMember.gender;
+      request.fields['familyMemberId'] = familyMember.id;
+      request.fields['familyMemberName'] = familyMember.name;
+      request.fields['familyMemberRelationship'] = familyMember.relationship;
+      request.fields['familyMemberAge'] = familyMember.age.toString();
+      request.fields['familyMemberGender'] = familyMember.gender;
       if (familyMember.healthNotes.isNotEmpty) {
-        request.fields['family_member_health_notes'] = familyMember.healthNotes;
+        request.fields['familyMemberHealthNotes'] = familyMember.healthNotes;
       }
 
-      // Add authorization
       request.headers['Authorization'] = 'Bearer $token';
 
       // Debug logging
-      print('--- Upload Debug Info ---');
-      print('file_path                  : ${imageFile.path}');
-      print('mime_type                  : $mimeType');
-      print('file_exists                : ${await imageFile.exists()}');
-      print('family_member_id           : ${familyMember.id}');
-      print('family_member_name         : ${familyMember.name}');
-      print('family_member_relationship : ${familyMember.relationship}');
-      print('family_member_age          : ${familyMember.age}');
-      print('family_member_gender       : ${familyMember.gender}');
-      print('family_member_health_notes : ${familyMember.healthNotes}');
-      print('--------------------------');
-
-
+      print('Sending file: ${imageFile.path}');
+      print('Detected MIME type: $mimeType');
+      print('File exists: ${await imageFile.exists()}');
+      print('Family member: ${familyMember.name} (${familyMember.relationship})');
 
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         return json.decode(response.body);
       } else {
-        print('Server error response: ${response.body}');
-        throw Exception(
-          'Server error: ${response.statusCode} - ${response.body}',
-        );
+        final errorBody = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Server error: ${response.statusCode} - $errorBody');
       }
     } catch (e) {
       print('Error in analyzeMedicalRecord: $e');
-      throw Exception('Failed to analyze medical record: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else if (e is FormatException) {
+        throw Exception('Invalid response format from server');
+      } else {
+        throw Exception('Failed to analyze medical record: $e');
+      }
     }
   }
 
@@ -96,84 +114,88 @@ class MedicalRecordService {
     required String familyMemberId,
   }) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders();
 
-      final response = await http.get(
-        Uri.parse('$baseUrl/medical/records?familyMemberId=$familyMemberId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+      final uri = Uri.parse('$baseUrl/medical/records').replace(
+        queryParameters: {'familyMemberId': familyMemberId},
       );
+
+      final response = await http.get(uri, headers: headers);
+
+      print('Get records response status: ${response.statusCode}');
+      print('Get records response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['records'] ?? []);
       } else {
-        throw Exception('Failed to fetch medical records: ${response.statusCode}');
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Failed to fetch medical records: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
       print('Error fetching medical records: $e');
-      throw Exception('Failed to fetch medical records: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to fetch medical records: $e');
+      }
     }
   }
 
   // Method to get all medical records for all family members
   Future<List<Map<String, dynamic>>> getAllMedicalRecords() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders();
 
       final response = await http.get(
         Uri.parse('$baseUrl/medical/records'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       );
+
+      print('Get all records response status: ${response.statusCode}');
+      print('Get all records response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['records'] ?? []);
       } else {
-        throw Exception('Failed to fetch medical records: ${response.statusCode}');
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Failed to fetch medical records: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
       print('Error fetching all medical records: $e');
-      throw Exception('Failed to fetch all medical records: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to fetch all medical records: $e');
+      }
     }
   }
 
   // Method to delete a medical record
   Future<void> deleteMedicalRecord(String recordId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders(isJson: false);
 
       final response = await http.delete(
         Uri.parse('$baseUrl/medical/records/$recordId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       );
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to delete medical record: ${response.statusCode}');
+      print('Delete record response status: ${response.statusCode}');
+      print('Delete record response body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Failed to delete medical record: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
       print('Error deleting medical record: $e');
-      throw Exception('Failed to delete medical record: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to delete medical record: $e');
+      }
     }
   }
 
@@ -185,147 +207,97 @@ class MedicalRecordService {
     String? type,
   }) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders();
 
       final body = <String, dynamic>{};
-      if (title != null) body['title'] = title;
-      if (note != null) body['note'] = note;
-      if (type != null) body['type'] = type;
+      if (title != null && title.isNotEmpty) body['title'] = title;
+      if (note != null) body['note'] = note; // Allow empty notes
+      if (type != null && type.isNotEmpty) body['type'] = type;
+
+      if (body.isEmpty) {
+        throw Exception('No fields to update');
+      }
 
       final response = await http.put(
         Uri.parse('$baseUrl/medical/records/$recordId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
         body: json.encode(body),
       );
 
+      print('Update record response status: ${response.statusCode}');
+      print('Update record response body: ${response.body}');
+
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Failed to update medical record: ${response.statusCode}');
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Failed to update medical record: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
       print('Error updating medical record: $e');
-      throw Exception('Failed to update medical record: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to update medical record: $e');
+      }
     }
   }
 
+  // Method to get user's medical records
   Future<Map<String, dynamic>> getUserMedicalRecords() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders();
 
       final response = await http.get(
         Uri.parse('$baseUrl/medical/records'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       );
+
+      print('Get user records response status: ${response.statusCode}');
+      print('Get user records response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Server error: ${response.statusCode}');
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Server error: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
-      throw Exception('Failed to fetch medical records: $e');
+      print('Error fetching user medical records: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to fetch medical records: $e');
+      }
     }
   }
 
+  // Method to get a specific medical record
   Future<Map<String, dynamic>> getMedicalRecord(String recordId) async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not logged in');
-      }
-      final token = await user.getIdToken();
+      final headers = await _getAuthHeaders();
 
       final response = await http.get(
         Uri.parse('$baseUrl/medical/records/$recordId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: headers,
       );
+
+      print('Get single record response status: ${response.statusCode}');
+      print('Get single record response body: ${response.body}');
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
       } else {
-        throw Exception('Server error: ${response.statusCode}');
+        final errorMessage = response.body.isNotEmpty ? response.body : 'Unknown error';
+        throw Exception('Server error: ${response.statusCode} - $errorMessage');
       }
     } catch (e) {
-      throw Exception('Failed to fetch medical record: $e');
+      print('Error fetching medical record: $e');
+      if (e is SocketException) {
+        throw Exception('Network error: Please check your internet connection');
+      } else {
+        throw Exception('Failed to fetch medical record: $e');
+      }
     }
   }
-
-  // Future<Map<String, dynamic>> updateMedicalRecord({
-  //   required String recordId,
-  //   String? title,
-  //   String? note,
-  // }) async {
-  //   try {
-  //     final user = FirebaseAuth.instance.currentUser;
-  //     if (user == null) {
-  //       throw Exception('User not logged in');
-  //     }
-  //     final token = await user.getIdToken();
-
-  //     var request = http.MultipartRequest(
-  //       'PUT',
-  //       Uri.parse('$baseUrl/medical/records/$recordId'),
-  //     );
-
-  //     if (title != null) request.fields['title'] = title;
-  //     if (note != null) request.fields['note'] = note;
-
-  //     request.headers['Authorization'] = 'Bearer $token';
-
-  //     var streamedResponse = await request.send();
-  //     var response = await http.Response.fromStream(streamedResponse);
-
-  //     if (response.statusCode == 200) {
-  //       return json.decode(response.body);
-  //     } else {
-  //       throw Exception('Server error: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Failed to update medical record: $e');
-  //   }
-  // }
-
-  // Future<Map<String, dynamic>> deleteMedicalRecord(String recordId) async {
-  //   try {
-  //     final user = FirebaseAuth.instance.currentUser;
-  //     if (user == null) {
-  //       throw Exception('User not logged in');
-  //     }
-  //     final token = await user.getIdToken();
-
-  //     final response = await http.delete(
-  //       Uri.parse('$baseUrl/medical/records/$recordId'),
-  //       headers: {
-  //         'Authorization': 'Bearer $token',
-  //         'Content-Type': 'application/json',
-  //       },
-  //     );
-
-  //     if (response.statusCode == 200) {
-  //       return json.decode(response.body);
-  //     } else {
-  //       throw Exception('Server error: ${response.statusCode}');
-  //     }
-  //   } catch (e) {
-  //     throw Exception('Failed to delete medical record: $e');
-  //   }
-  // }
 }

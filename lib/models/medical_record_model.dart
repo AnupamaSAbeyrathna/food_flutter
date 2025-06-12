@@ -1,5 +1,4 @@
-// ===== medical_record_model.dart (Server Model) =====
-// This model is used for sending data to the server
+// ===== medical_record_model.dart (Fixed Version) =====
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MedicalRecord {
