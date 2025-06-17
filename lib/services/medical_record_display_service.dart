@@ -72,13 +72,14 @@ class MedicalRecordsService {
     String userId, 
     String memberId,
     String recordId, 
-    {String? title, String? note}
+    {String? title, String? note, Map<String, dynamic>? aiAnalysis}
   ) async {
     try {
       Map<String, dynamic> updateData = {};
       if (title != null) updateData['title'] = title;
       if (note != null) updateData['note'] = note;
-      
+      if (aiAnalysis != null) updateData['ai_analysis'] = aiAnalysis;
+
       final headers = await _getAuthHeaders();
       final response = await http.put(
         Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
@@ -191,13 +192,16 @@ class MedicalRecordsService {
     String userId, 
     String memberId,
     String recordId, 
-    {String? title, String? note}
+    {String? title, String? note, Map<String, dynamic>? aiAnalysis}
   ) async {
     try {
       Map<String, dynamic> updateData = {};
+      
       if (title != null) updateData['title'] = title;
       if (note != null) updateData['note'] = note;
-      
+      if (aiAnalysis != null) updateData['ai_analysis'] = aiAnalysis;
+      print('updateData: title:${updateData['title']}, note:${updateData['note']}, aiAnalysis:${updateData['ai_analysis']}');
+
       final headers = await _getAuthHeaders();
       final response = await http.put(
         Uri.parse('$baseUrl/medical/users/$userId/family-members/$memberId/medical-records/$recordId'),
