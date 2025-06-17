@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'food_analyze/food_analysis_screen.dart';
 import 'medical_record/medical_record_upload_screen.dart';
+import 'profile/meal_screen.dart';
 import 'login_screen.dart';
 import '../theme.dart';
 
@@ -18,36 +19,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late Animation<Offset> _slideAnimation;
 
   final PageController _pageController = PageController();
-  //int _currentPage = 0;
-
-  // Sample data for recent analysis and quick actions
-  final List<Map<String, dynamic>> _recentAnalyses = [
-    {
-      'name': 'Caesar Salad',
-      'calories': 350,
-      'time': '2 hours ago',
-      'rating': 4,
-      'color': Colors.green[100],
-    },
-    {
-      'name': 'Grilled Chicken',
-      'calories': 280,
-      'time': '5 hours ago',
-      'rating': 5,
-      'color': Colors.blue[100],
-    },
-    {
-      'name': 'Pasta Carbonara',
-      'calories': 520,
-      'time': 'Yesterday',
-      'rating': 3,
-      'color': Colors.orange[100],
-    },
-  ];
 
   final List<Map<String, dynamic>> _quickActions = [
     {
-      'title': 'Analyze Food',
+      'title': 'My Food',
       'subtitle': 'Take a photo',
       'icon': Icons.camera_alt_outlined,
       'color': Colors.blue,
@@ -160,6 +135,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         pageBuilder:
             (context, animation, secondaryAnimation) =>
                 const MedicalRecordScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          );
+        },
+      ),
+    );
+  }
+
+  void _navigateToMealScreen() {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) =>
+                MealScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
             position: Tween<Offset>(
@@ -360,17 +354,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           crossAxisCount: 2,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 1.3, // Increased from 1.2 to give more height
+                          childAspectRatio: 1.3,
                         ),
                     itemCount: _quickActions.length,
                     itemBuilder: (context, index) {
                       final action = _quickActions[index];
                       return GestureDetector(
                         onTap: () {
-                          if (action['title'] == 'Analyze Food') {
+                          if (action['title'] == 'My Food') {
                             _navigateToFoodAnalysis();
                           } else if (action['title'] == 'Medical Records') {
                             _navigateToMedicalRecords();
+                          } else if (action['title'] == 'Food Diary') {
+                            _navigateToMealScreen();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -408,7 +404,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                   color: Colors.white,
                                 ),
                                 const SizedBox(height: 12),
-                                Flexible( // Added Flexible to prevent overflow
+                                Flexible(
                                   child: Text(
                                     action['title'],
                                     style: const TextStyle(
@@ -417,12 +413,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       fontWeight: FontWeight.w600,
                                     ),
                                     textAlign: TextAlign.center,
-                                    maxLines: 2, // Allow up to 2 lines
-                                    overflow: TextOverflow.ellipsis, // Handle overflow gracefully
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                Flexible( // Added Flexible for subtitle too
+                                Flexible(
                                   child: Text(
                                     action['subtitle'],
                                     style: TextStyle(
@@ -437,129 +433,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               ],
                             ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Recent Analyses
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Recent Analyses',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('View all analyses coming soon!'),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          'View All',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _recentAnalyses.length,
-                    itemBuilder: (context, index) {
-                      final analysis = _recentAnalyses[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(16),
-                          leading: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: analysis['color'],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.restaurant,
-                              color: Colors.black54,
-                            ),
-                          ),
-                          title: Text(
-                            analysis['name'],
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text('${analysis['calories']} calories'),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  ...List.generate(5, (starIndex) {
-                                    return Icon(
-                                      starIndex < analysis['rating']
-                                          ? Icons.star
-                                          : Icons.star_border,
-                                      size: 16,
-                                      color: Colors.amber,
-                                    );
-                                  }),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    analysis['time'],
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Colors.grey[400],
-                          ),
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'View ${analysis['name']} details coming soon!',
-                                ),
-                              ),
-                            );
-                          },
                         ),
                       );
                     },

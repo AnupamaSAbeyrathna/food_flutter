@@ -1,5 +1,6 @@
 // lib/screens/medical_record_edit_screen.dart
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../models/medical_record_display_model.dart';
 import '../../services/medical_record_display_service.dart';
 
@@ -27,14 +28,25 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
+  // Dynamic AI Analysis data
+  Map<String, dynamic> _aiAnalysisData = {};
+  final Map<String, TextEditingController> _aiControllers = {};
+  
   bool _isLoading = false;
   bool _hasUnsavedChanges = false;
+  bool _showRawJson = false;
   
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.record.title);
     _noteController = TextEditingController(text: widget.record.metadata.notes ?? '');
+    
+    // Initialize AI Analysis data
+    _aiAnalysisData = widget.record.metadata.aiAnalysis != null 
+        ? Map<String, dynamic>.from(widget.record.metadata.aiAnalysis!)
+        : {};
+    _initializeAIControllers();
     
     // Animation setup
     _animationController = AnimationController(
@@ -52,6 +64,34 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
     _animationController.forward();
   }
   
+  void _initializeAIControllers() {
+    _aiControllers.clear();
+    _createControllersRecursively(_aiAnalysisData);
+  }
+  
+  void _createControllersRecursively(Map<String, dynamic> data, [String prefix = '']) {
+    data.forEach((key, value) {
+      final fullKey = prefix.isEmpty ? key : '$prefix.$key';
+      
+      if (value is Map<String, dynamic>) {
+        _createControllersRecursively(value, fullKey);
+      } else if (value is List) {
+        for (int i = 0; i < value.length; i++) {
+          final itemKey = '$fullKey[$i]';
+          if (value[i] is Map<String, dynamic>) {
+            _createControllersRecursively(value[i] as Map<String, dynamic>, itemKey);
+          } else {
+            _aiControllers[itemKey] = TextEditingController(text: value[i]?.toString() ?? '');
+            _aiControllers[itemKey]!.addListener(_onFieldChanged);
+          }
+        }
+      } else {
+        _aiControllers[fullKey] = TextEditingController(text: value?.toString() ?? '');
+        _aiControllers[fullKey]!.addListener(_onFieldChanged);
+      }
+    });
+  }
+  
   void _onFieldChanged() {
     if (!_hasUnsavedChanges) {
       setState(() => _hasUnsavedChanges = true);
@@ -62,8 +102,74 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
   void dispose() {
     _titleController.dispose();
     _noteController.dispose();
+    _aiControllers.values.forEach((controller) => controller.dispose());
     _animationController.dispose();
     super.dispose();
+  }
+  
+  Map<String, dynamic> _buildUpdatedAIAnalysis() {
+    Map<String, dynamic> result = {};
+    
+    _aiControllers.forEach((path, controller) {
+      final value = controller.text.trim();
+      if (value.isNotEmpty) {
+        _setNestedValue(result, path, value);
+      }
+    });
+    
+    return result;
+  }
+  
+  void _setNestedValue(Map<String, dynamic> map, String path, String value) {
+    final parts = path.split('.');
+    Map<String, dynamic> current = map;
+    
+    for (int i = 0; i < parts.length - 1; i++) {
+      final part = parts[i];
+      
+      if (part.contains('[') && part.contains(']')) {
+        // Handle array notation like "medications[0]"
+        final arrayKey = part.substring(0, part.indexOf('['));
+        final indexStr = part.substring(part.indexOf('[') + 1, part.indexOf(']'));
+        final index = int.tryParse(indexStr) ?? 0;
+        
+        if (!current.containsKey(arrayKey)) {
+          current[arrayKey] = <Map<String, dynamic>>[];
+        }
+        
+        final list = current[arrayKey] as List;
+        while (list.length <= index) {
+          list.add(<String, dynamic>{});
+        }
+        
+        current = list[index] as Map<String, dynamic>;
+      } else {
+        if (!current.containsKey(part)) {
+          current[part] = <String, dynamic>{};
+        }
+        current = current[part] as Map<String, dynamic>;
+      }
+    }
+    
+    final lastPart = parts.last;
+    if (lastPart.contains('[') && lastPart.contains(']')) {
+      final arrayKey = lastPart.substring(0, lastPart.indexOf('['));
+      final indexStr = lastPart.substring(lastPart.indexOf('[') + 1, lastPart.indexOf(']'));
+      final index = int.tryParse(indexStr) ?? 0;
+      
+      if (!current.containsKey(arrayKey)) {
+        current[arrayKey] = <String>[];
+      }
+      
+      final list = current[arrayKey] as List;
+      while (list.length <= index) {
+        list.add('');
+      }
+      
+      list[index] = value;
+    } else {
+      current[lastPart] = value;
+    }
   }
   
   Future<void> _saveChanges() async {
@@ -72,15 +178,17 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
     setState(() => _isLoading = true);
     
     try {
-      await _service.updateRecord(
+      final updatedAiAnalysis = _buildUpdatedAIAnalysis();
+
+      await _service.updateRecordForMember(
         widget.userId,
         widget.record.familyMemberId,
         widget.record.id,
         title: _titleController.text.trim(),
         note: _noteController.text.trim(),
+        aiAnalysis: updatedAiAnalysis.isNotEmpty ? updatedAiAnalysis : null,
       );
       
-      // Success animation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -96,7 +204,7 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
         ),
       );
       
-      Navigator.pop(context, true); // Return with success flag
+      Navigator.pop(context, true);
       
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,6 +257,149 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
         ],
       ),
     ) ?? false;
+  }
+  
+  Widget _buildDynamicAIField(String key, dynamic value, [String fullPath = '']) {
+    final currentPath = fullPath.isEmpty ? key : '$fullPath.$key';
+    
+    if (value is Map<String, dynamic>) {
+      return _buildNestedSection(key, value, currentPath);
+    } else if (value is List) {
+      return _buildListSection(key, value, currentPath);
+    } else {
+      return _buildSimpleField(key, currentPath);
+    }
+  }
+  
+  Widget _buildNestedSection(String title, Map<String, dynamic> data, String path) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.blue[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue[200]!),
+      ),
+      child: ExpansionTile(
+        leading: Icon(Icons.folder, color: Colors.blue[600]),
+        title: Text(
+          _formatFieldName(title),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blue[800],
+          ),
+        ),
+        initiallyExpanded: true,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: data.entries.map((entry) {
+                return _buildDynamicAIField(entry.key, entry.value, path);
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildListSection(String title, List<dynamic> data, String path) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green[200]!),
+      ),
+      child: ExpansionTile(
+        leading: Icon(Icons.list, color: Colors.green[600]),
+        title: Text(
+          '${_formatFieldName(title)} (${data.length} items)',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.green[800],
+          ),
+        ),
+        initiallyExpanded: true,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: data.asMap().entries.map((entry) {
+                final index = entry.key;
+                final value = entry.value;
+                
+                if (value is Map<String, dynamic>) {
+                  return _buildNestedSection('Item ${index + 1}', value, '$path[$index]');
+                } else {
+                  return _buildSimpleField('Item ${index + 1}', '$path[$index]');
+                }
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSimpleField(String fieldName, String path) {
+    final controller = _aiControllers[path];
+    if (controller == null) return SizedBox.shrink();
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: _formatFieldName(fieldName),
+          hintText: 'Enter ${_formatFieldName(fieldName).toLowerCase()}',
+          prefixIcon: Icon(_getIconForField(fieldName)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        maxLines: _isLongTextField(fieldName) ? 3 : 1,
+      ),
+    );
+  }
+  
+  String _formatFieldName(String fieldName) {
+    // Remove array notation and convert camelCase to Title Case
+    String cleaned = fieldName.replaceAll(RegExp(r'\[\d+\]'), '');
+    return cleaned.replaceAllMapped(
+      RegExp(r'([A-Z])'),
+      (match) => ' ${match.group(1)}',
+    ).split(' ').map((word) => 
+      word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : word
+    ).join(' ').trim();
+  }
+  
+  IconData _getIconForField(String fieldName) {
+    final lower = fieldName.toLowerCase();
+    if (lower.contains('name')) return Icons.person;
+    if (lower.contains('date')) return Icons.calendar_today;
+    if (lower.contains('doctor')) return Icons.local_hospital;
+    if (lower.contains('medication')) return Icons.medication;
+    if (lower.contains('dosage')) return Icons.local_pharmacy;
+    if (lower.contains('frequency')) return Icons.schedule;
+    if (lower.contains('instruction')) return Icons.info;
+    if (lower.contains('diagnosis')) return Icons.medical_services;
+    if (lower.contains('test')) return Icons.science;
+    return Icons.edit;
+  }
+  
+  bool _isLongTextField(String fieldName) {
+    final lower = fieldName.toLowerCase();
+    return lower.contains('instruction') || 
+           lower.contains('note') || 
+           lower.contains('description') ||
+           lower.contains('comment');
   }
   
   @override
@@ -213,8 +464,13 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
                         
                         SizedBox(height: 24),
                         
-                        // Editable Fields Section
-                        _buildEditableSection(),
+                        // Basic Editable Fields Section
+                        _buildBasicEditableSection(),
+                        
+                        SizedBox(height: 24),
+                        
+                        // AI Analysis Section
+                        if (_aiAnalysisData.isNotEmpty) _buildAIAnalysisSection(),
                         
                         SizedBox(height: 24),
                         
@@ -338,7 +594,7 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
     );
   }
   
-  Widget _buildEditableSection() {
+  Widget _buildBasicEditableSection() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -365,7 +621,7 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Editable Fields',
+                  'Basic Information',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -426,6 +682,80 @@ class _MedicalRecordEditScreenState extends State<MedicalRecordEditScreen>
               maxLines: 5,
               maxLength: 500,
             ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildAIAnalysisSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.psychology,
+                  color: Colors.purple[600],
+                  size: 24,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'AI Analysis Data',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                Spacer(),
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() => _showRawJson = !_showRawJson);
+                  },
+                  icon: Icon(_showRawJson ? Icons.visibility_off : Icons.code),
+                  label: Text(_showRawJson ? 'Form View' : 'JSON View'),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            
+            if (_showRawJson) 
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Text(
+                  JsonEncoder.withIndent('  ').convert(_buildUpdatedAIAnalysis()),
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: _aiAnalysisData.entries.map((entry) {
+                  return _buildDynamicAIField(entry.key, entry.value);
+                }).toList(),
+              ),
           ],
         ),
       ),

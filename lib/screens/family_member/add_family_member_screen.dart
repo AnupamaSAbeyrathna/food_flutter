@@ -31,6 +31,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
   final _ageController = TextEditingController();
   final _relationshipController = TextEditingController();
   final _healthNotesController = TextEditingController();
+  final _allergiesController = TextEditingController(); // Added allergies controller
+  final _longTermMedicationsController = TextEditingController(); // Added medications controller
 
   String _selectedGender = 'Male';
   DateTime? _selectedBirthDate;
@@ -71,6 +73,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
       _selectedGender = member.gender;
       _relationshipController.text = member.relationship;
       _healthNotesController.text = member.healthNotes;
+      _allergiesController.text = member.allergies; // Initialize allergies
+      _longTermMedicationsController.text = member.longTermMedications; // Initialize medications
     }
 
     // Add listeners for unsaved changes detection
@@ -78,6 +82,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     _ageController.addListener(_onFormChanged);
     _relationshipController.addListener(_onFormChanged);
     _healthNotesController.addListener(_onFormChanged);
+    _allergiesController.addListener(_onFormChanged); // Added listener
+    _longTermMedicationsController.addListener(_onFormChanged); // Added listener
   }
 
   void _onFormChanged() {
@@ -166,6 +172,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
         gender: _selectedGender,
         relationship: _relationshipController.text.trim(),
         healthNotes: _healthNotesController.text.trim(),
+        allergies: _allergiesController.text.trim(), // Added allergies
+        longTermMedications: _longTermMedicationsController.text.trim(), // Added medications
       );
 
       await docRef.set(member.toMap());
@@ -225,6 +233,8 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     _ageController.dispose();
     _relationshipController.dispose();
     _healthNotesController.dispose();
+    _allergiesController.dispose(); // Added disposal
+    _longTermMedicationsController.dispose(); // Added disposal
     super.dispose();
   }
 
@@ -378,17 +388,36 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
                   ),
                   const SizedBox(height: 16),
 
-                  // Health Information Section
+                  // Health Information Section - Updated with new fields
                   _buildSectionCard(
                     'Health Information',
                     Icons.health_and_safety,
                     [
                       _buildTextField(
+                        controller: _allergiesController,
+                        label: 'Allergies (Optional)',
+                        icon: Icons.warning_amber_outlined,
+                        maxLines: 2,
+                        hint: 'Food allergies, drug allergies, environmental allergies...',
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
+                        controller: _longTermMedicationsController,
+                        label: 'Long-term Medications (Optional)',
+                        icon: Icons.medication_outlined,
+                        maxLines: 2,
+                        hint: 'Current medications, dosages, frequency...',
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTextField(
                         controller: _healthNotesController,
-                        label: 'Health Notes (Optional)',
+                        label: 'Additional Health Notes (Optional)',
                         icon: Icons.medical_information_outlined,
                         maxLines: 3,
-                        hint: 'Any medical conditions, allergies, or important health information...',
+                        hint: 'Medical conditions, surgeries, family medical history...',
+                        textCapitalization: TextCapitalization.sentences,
                       ),
                     ],
                   ),

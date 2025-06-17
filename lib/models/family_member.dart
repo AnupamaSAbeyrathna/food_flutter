@@ -8,6 +8,8 @@ class FamilyMember {
   final String gender;
   final String relationship;
   final String healthNotes;
+  final String allergies;
+  final String longTermMedications; // Fixed naming convention
 
   FamilyMember({
     required this.id,
@@ -16,6 +18,8 @@ class FamilyMember {
     required this.gender,
     required this.relationship,
     required this.healthNotes,
+    required this.allergies,
+    required this.longTermMedications, // Fixed naming convention
   });
 
   // Factory constructor to create a default "self" member
@@ -24,6 +28,8 @@ class FamilyMember {
     int? age,
     String? gender,
     String? healthNotes,
+    String? allergies,
+    String? longTermMedications,  
   }) {
     const uuid = Uuid();
     return FamilyMember(
@@ -33,6 +39,8 @@ class FamilyMember {
       gender: gender ?? 'Male',
       relationship: 'Self',
       healthNotes: healthNotes ?? '',
+      allergies: allergies ?? '',
+      longTermMedications: longTermMedications ?? '', // Fixed naming
     );
   }
 
@@ -44,6 +52,8 @@ class FamilyMember {
       'gender': gender,
       'relationship': relationship,
       'healthNotes': healthNotes,
+      'allergies': allergies, // Added missing field
+      'longTermMedications': longTermMedications, // Added missing field
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -55,7 +65,9 @@ class FamilyMember {
       age: map['age'],
       gender: map['gender'],
       relationship: map['relationship'],
-      healthNotes: map['healthNotes'],
+      healthNotes: map['healthNotes'] ?? '', // Added null safety
+      allergies: map['allergies'] ?? '', // Added missing field with null safety
+      longTermMedications: map['longTermMedications'] ?? '', // Added missing field with null safety
     );
   }
 }
@@ -88,12 +100,16 @@ class FamilyMemberService {
     required int age,
     required String gender,
     String? healthNotes,
+    String? allergies, // Added allergies parameter
+    String? longTermMedications, // Added medications parameter
   }) async {
     final selfMember = FamilyMember.createSelf(
       name: name,
       age: age,
       gender: gender,
       healthNotes: healthNotes,
+      allergies: allergies, // Added allergies
+      longTermMedications: longTermMedications, // Added medications
     );
     
     await _getFamilyMembersCollection(userId)
@@ -139,5 +155,64 @@ class FamilyMemberService {
     return querySnapshot.docs
         .map((doc) => FamilyMember.fromMap(doc.data() as Map<String, dynamic>))
         .toList();
+  }
+
+  // Add a new method to add other family members (not self)
+  Future<void> addFamilyMember({
+    required String userId,
+    required String name,
+    required int age,
+    required String gender,
+    required String relationship,
+    String? healthNotes,
+    String? allergies,
+    String? longTermMedications,
+  }) async {
+    const uuid = Uuid();
+    final familyMember = FamilyMember(
+      id: uuid.v4(),
+      name: name,
+      age: age,
+      gender: gender,
+      relationship: relationship,
+      healthNotes: healthNotes ?? '',
+      allergies: allergies ?? '',
+      longTermMedications: longTermMedications ?? '',
+    );
+    
+    await _getFamilyMembersCollection(userId)
+        .doc(familyMember.id)
+        .set(familyMember.toMap());
+  }
+
+  // Update family member
+  Future<void> updateFamilyMember({
+    required String userId,
+    required String memberId,
+    String? name,
+    int? age,
+    String? gender,
+    String? relationship,
+    String? healthNotes,
+    String? allergies,
+    String? longTermMedications,
+  }) async {
+    final Map<String, dynamic> updateData = {};
+    
+    if (name != null) updateData['name'] = name;
+    if (age != null) updateData['age'] = age;
+    if (gender != null) updateData['gender'] = gender;
+    if (relationship != null) updateData['relationship'] = relationship;
+    if (healthNotes != null) updateData['healthNotes'] = healthNotes;
+    if (allergies != null) updateData['allergies'] = allergies;
+    if (longTermMedications != null) updateData['longTermMedications'] = longTermMedications;
+    
+    if (updateData.isNotEmpty) {
+      updateData['updatedAt'] = FieldValue.serverTimestamp();
+      
+      await _getFamilyMembersCollection(userId)
+          .doc(memberId)
+          .update(updateData);
+    }
   }
 }
