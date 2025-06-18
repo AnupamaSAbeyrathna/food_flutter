@@ -455,7 +455,7 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
     final prescriptionCount = _records.where((r) => r.type == 'prescription').length;
     final medicationCount = _records.where((r) => r.type == 'medication').length;
     final labCount = _records.where((r) => r.type == 'lab_result').length;
-    final criticalCount = _records.where((r) => r.hasCriticalResults).length;
+    // final criticalCount = _records.where((r) => r.hasCriticalResults).length;
     
     return Container(
       padding: EdgeInsets.all(16),
@@ -466,10 +466,10 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
           Expanded(child: _buildStatCard('Medications', medicationCount, Icons.local_pharmacy, Colors.blue)),
           SizedBox(width: 8),
           Expanded(child: _buildStatCard('Lab Results', labCount, Icons.science, Colors.orange)),
-          if (criticalCount > 0) ...[
-            SizedBox(width: 8),
-            Expanded(child: _buildStatCard('Critical', criticalCount, Icons.warning, Colors.red)),
-          ],
+          // if (criticalCount > 0) ...[
+          //   SizedBox(width: 8),
+          //   Expanded(child: _buildStatCard('Critical', criticalCount, Icons.warning, Colors.red)),
+          // ],
         ],
       ),
     );
@@ -894,17 +894,17 @@ class _MedicalRecordsListScreenState extends State<MedicalRecordsListScreen>
                 // Trailing
                 Column(
                   children: [
-                    if (record.hasCriticalResults)
-                      Container(
-                        padding: EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.red[100],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.warning, color: Colors.red, size: 16),
-                      )
-                    else
-                      Icon(Icons.chevron_right, color: Colors.grey[400]),
+                    // if (record.hasCriticalResults)
+                    //   Container(
+                    //     padding: EdgeInsets.all(6),
+                    //     decoration: BoxDecoration(
+                    //       color: Colors.red[100],
+                    //       shape: BoxShape.circle,
+                    //     ),
+                    //     child: Icon(Icons.warning, color: Colors.red, size: 16),
+                    //   )
+                    // else
+                    //   Icon(Icons.chevron_right, color: Colors.grey[400]),
                     
                     if (record.imageUrls.length > 1) ...[
                       SizedBox(height: 4),

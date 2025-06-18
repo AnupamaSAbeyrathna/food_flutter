@@ -9,7 +9,10 @@ class FamilyMember {
   final String relationship;
   final String healthNotes;
   final String allergies;
-  final String longTermMedications; // Fixed naming convention
+  final String longTermMedications;
+  final double height;
+  final double weight;
+  final String bloodGroup;
 
   FamilyMember({
     required this.id,
@@ -19,7 +22,10 @@ class FamilyMember {
     required this.relationship,
     required this.healthNotes,
     required this.allergies,
-    required this.longTermMedications, // Fixed naming convention
+    required this.longTermMedications,
+    required this.height,
+    required this.weight,
+    required this.bloodGroup,
   });
 
   // Factory constructor to create a default "self" member
@@ -29,7 +35,10 @@ class FamilyMember {
     String? gender,
     String? healthNotes,
     String? allergies,
-    String? longTermMedications,  
+    String? longTermMedications,
+    double? height,
+    double? weight,
+    String? bloodGroup,
   }) {
     const uuid = Uuid();
     return FamilyMember(
@@ -40,8 +49,46 @@ class FamilyMember {
       relationship: 'Self',
       healthNotes: healthNotes ?? '',
       allergies: allergies ?? '',
-      longTermMedications: longTermMedications ?? '', // Fixed naming
+      longTermMedications: longTermMedications ?? '',
+      height: height ?? 0.0,
+      weight: weight ?? 0.0,
+      bloodGroup: bloodGroup ?? '',
     );
+  }
+
+  // Calculate BMI
+  double get bmi {
+    if (height <= 0 || weight <= 0) return 0.0;
+    final heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
+  }
+
+  // Get BMI category
+  String get bmiCategory {
+    final bmiValue = bmi;
+    if (bmiValue <= 0) return 'Not calculated';
+    if (bmiValue < 18.5) return 'Underweight';
+    if (bmiValue < 25) return 'Normal weight';
+    if (bmiValue < 30) return 'Overweight';
+    return 'Obese';
+  }
+
+  // Get formatted height
+  String get formattedHeight {
+    if (height <= 0) return 'Not specified';
+    return '${height.toStringAsFixed(1)} cm';
+  }
+
+  // Get formatted weight
+  String get formattedWeight {
+    if (weight <= 0) return 'Not specified';
+    return '${weight.toStringAsFixed(1)} kg';
+  }
+
+  // Get formatted BMI
+  String get formattedBmi {
+    if (bmi <= 0) return 'Not calculated';
+    return bmi.toStringAsFixed(1);
   }
 
   Map<String, dynamic> toMap() {
@@ -52,8 +99,11 @@ class FamilyMember {
       'gender': gender,
       'relationship': relationship,
       'healthNotes': healthNotes,
-      'allergies': allergies, // Added missing field
-      'longTermMedications': longTermMedications, // Added missing field
+      'allergies': allergies,
+      'longTermMedications': longTermMedications,
+      'height': height,
+      'weight': weight,
+      'bloodGroup': bloodGroup,
       'createdAt': FieldValue.serverTimestamp(),
     };
   }
@@ -65,9 +115,12 @@ class FamilyMember {
       age: map['age'],
       gender: map['gender'],
       relationship: map['relationship'],
-      healthNotes: map['healthNotes'] ?? '', // Added null safety
-      allergies: map['allergies'] ?? '', // Added missing field with null safety
-      longTermMedications: map['longTermMedications'] ?? '', // Added missing field with null safety
+      healthNotes: map['healthNotes'] ?? '',
+      allergies: map['allergies'] ?? '',
+      longTermMedications: map['longTermMedications'] ?? '',
+      height: (map['height'] ?? 0.0).toDouble(),
+      weight: (map['weight'] ?? 0.0).toDouble(),
+      bloodGroup: map['bloodGroup'] ?? '',
     );
   }
 }
@@ -100,16 +153,22 @@ class FamilyMemberService {
     required int age,
     required String gender,
     String? healthNotes,
-    String? allergies, // Added allergies parameter
-    String? longTermMedications, // Added medications parameter
+    String? allergies,
+    String? longTermMedications,
+    double? height,
+    double? weight,
+    String? bloodGroup,
   }) async {
     final selfMember = FamilyMember.createSelf(
       name: name,
       age: age,
       gender: gender,
       healthNotes: healthNotes,
-      allergies: allergies, // Added allergies
-      longTermMedications: longTermMedications, // Added medications
+      allergies: allergies,
+      longTermMedications: longTermMedications,
+      height: height,
+      weight: weight,
+      bloodGroup: bloodGroup,
     );
     
     await _getFamilyMembersCollection(userId)
@@ -167,6 +226,9 @@ class FamilyMemberService {
     String? healthNotes,
     String? allergies,
     String? longTermMedications,
+    double? height,
+    double? weight,
+    String? bloodGroup,
   }) async {
     const uuid = Uuid();
     final familyMember = FamilyMember(
@@ -178,6 +240,9 @@ class FamilyMemberService {
       healthNotes: healthNotes ?? '',
       allergies: allergies ?? '',
       longTermMedications: longTermMedications ?? '',
+      height: height ?? 0.0,
+      weight: weight ?? 0.0,
+      bloodGroup: bloodGroup ?? '',
     );
     
     await _getFamilyMembersCollection(userId)
@@ -196,6 +261,9 @@ class FamilyMemberService {
     String? healthNotes,
     String? allergies,
     String? longTermMedications,
+    double? height,
+    double? weight,
+    String? bloodGroup,
   }) async {
     final Map<String, dynamic> updateData = {};
     
@@ -206,6 +274,9 @@ class FamilyMemberService {
     if (healthNotes != null) updateData['healthNotes'] = healthNotes;
     if (allergies != null) updateData['allergies'] = allergies;
     if (longTermMedications != null) updateData['longTermMedications'] = longTermMedications;
+    if (height != null) updateData['height'] = height;
+    if (weight != null) updateData['weight'] = weight;
+    if (bloodGroup != null) updateData['bloodGroup'] = bloodGroup;
     
     if (updateData.isNotEmpty) {
       updateData['updatedAt'] = FieldValue.serverTimestamp();

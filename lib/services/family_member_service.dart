@@ -5,14 +5,13 @@ import '../models/family_member.dart';
 
 class FamilyMemberService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String _collectionName = 'family_members';
 
   // Get current user's family members collection reference
   CollectionReference _getFamilyMembersCollection(String userId) {
     return _firestore
         .collection('users')
         .doc(userId)
-        .collection(_collectionName);
+        .collection('family_members');
   }
 
   // Get all family members for a user (used in your screen)
@@ -109,13 +108,16 @@ class FamilyMemberService {
     }
   }
 
-  // Create self member with custom details
+  // Create self member with custom details (UPDATED with health data)
   Future<void> createCustomSelfMember({
     required String userId,
     required String name,
     required int age,
     required String gender,
     String? healthNotes,
+    double? height,
+    double? weight,
+    String? bloodGroup,
   }) async {
     try {
       final selfMember = FamilyMember.createSelf(
@@ -123,6 +125,9 @@ class FamilyMemberService {
         age: age,
         gender: gender,
         healthNotes: healthNotes,
+        height: height,
+        weight: weight,
+        bloodGroup: bloodGroup,
       );
       await createFamilyMember(userId, selfMember);
     } catch (e) {
@@ -261,6 +266,117 @@ class FamilyMemberService {
           .update({'healthNotes': healthNotes});
     } catch (e) {
       throw Exception('Failed to update health notes: $e');
+    }
+  }
+
+  // NEW: Update physical health data (height, weight, blood group)
+  Future<void> updatePhysicalData({
+    required String userId,
+    required String memberId,
+    double? height,
+    double? weight,
+    String? bloodGroup,
+  }) async {
+    try {
+      final Map<String, dynamic> updateData = {};
+      
+      if (height != null) updateData['height'] = height;
+      if (weight != null) updateData['weight'] = weight;
+      if (bloodGroup != null) updateData['bloodGroup'] = bloodGroup;
+      
+      if (updateData.isNotEmpty) {
+        updateData['updatedAt'] = FieldValue.serverTimestamp();
+        
+        await _getFamilyMembersCollection(userId)
+            .doc(memberId)
+            .update(updateData);
+      }
+    } catch (e) {
+      throw Exception('Failed to update physical data: $e');
+    }
+  }
+
+  // NEW: Get family members by blood group
+  Future<List<FamilyMember>> getFamilyMembersByBloodGroup(String userId, String bloodGroup) async {
+    try {
+      final querySnapshot = await _getFamilyMembersCollection(userId)
+          .where('bloodGroup', isEqualTo: bloodGroup)
+          .get();
+      
+      return querySnapshot.docs
+          .map((doc) => FamilyMember.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to get family members by blood group: $e');
+    }
+  }
+
+  // NEW: Get family members with complete health data
+  Future<List<FamilyMember>> getFamilyMembersWithHealthData(String userId) async {
+    try {
+      final allMembers = await getFamilyMembers(userId);
+      
+      return allMembers.where((member) => 
+          member.height > 0 && member.weight > 0 && member.bloodGroup.isNotEmpty
+      ).toList();
+    } catch (e) {
+      throw Exception('Failed to get family members with health data: $e');
+    }
+  }
+
+  // NEW: Get family health summary
+  Future<Map<String, dynamic>> getFamilyHealthSummary(String userId) async {
+    try {
+      final members = await getFamilyMembers(userId);
+      
+      final summary = <String, dynamic>{
+        'totalMembers': members.length,
+        'membersWithHealthData': 0,
+        'averageAge': 0.0,
+        'bloodGroups': <String, int>{},
+        'averageHeight': 0.0,
+        'averageWeight': 0.0,
+      };
+
+      if (members.isEmpty) return summary;
+
+      int totalAge = 0;
+      int membersWithHealthData = 0;
+      double totalHeight = 0.0;
+      double totalWeight = 0.0;
+      int membersWithPhysicalData = 0;
+      final bloodGroups = <String, int>{};
+
+      for (final member in members) {
+        totalAge += member.age;
+        
+        if (member.height > 0 && member.weight > 0 && member.bloodGroup.isNotEmpty) {
+          membersWithHealthData++;
+        }
+        
+        if (member.height > 0 && member.weight > 0) {
+          totalHeight += member.height;
+          totalWeight += member.weight;
+          membersWithPhysicalData++;
+        }
+        
+        if (member.bloodGroup.isNotEmpty) {
+          bloodGroups[member.bloodGroup] = (bloodGroups[member.bloodGroup] ?? 0) + 1;
+        }
+      }
+
+      summary['membersWithHealthData'] = membersWithHealthData;
+      summary['averageAge'] = totalAge / members.length;
+      summary['bloodGroups'] = bloodGroups;
+      
+      if (membersWithPhysicalData > 0) {
+        summary['averageHeight'] = totalHeight / membersWithPhysicalData;
+        summary['averageWeight'] = totalWeight / membersWithPhysicalData;
+      }
+
+      return summary;
+    } catch (e) {
+      throw Exception('Failed to get family health summary: $e');
     }
   }
 }

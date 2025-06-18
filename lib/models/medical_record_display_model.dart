@@ -7,7 +7,7 @@ class MedicalRecordDisplay {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<String> imageUrls;
-  final MedicalRecordMetadata metadata;
+  final MedicalRecordMetadata metadata; //  include the aiAnalysis
   
   // Family member display information
   final String familyMemberId;
@@ -84,9 +84,9 @@ class MedicalRecordDisplay {
     }
   }
 
-  bool get hasCriticalResults {
-    return metadata.criticalResults?.isNotEmpty ?? false;
-  }
+  // bool get hasCriticalResults {
+  //   return metadata.criticalResults?.isNotEmpty ?? false;
+  // }
 
   bool get isSelfRecord => familyMemberRelationship.toLowerCase() == 'self';
 
@@ -115,80 +115,80 @@ class MedicalRecordDisplay {
   }
 
   // Status indicators for UI
-  String get statusColor {
-    if (hasCriticalResults) return 'red';
-    if (metadata.analysisStatus == 'success') return 'green';
-    if (metadata.analysisStatus == 'pending') return 'orange';
-    return 'grey';
-  }
+  // String get statusColor {
+  //   if (hasCriticalResults) return 'red';
+  //   if (metadata.analysisStatus == 'success') return 'green';
+  //   if (metadata.analysisStatus == 'pending') return 'orange';
+  //   return 'grey';
+  // }
 
-  bool get needsAttention => hasCriticalResults;
+  // bool get needsAttention => hasCriticalResults;
   
-  String get statusText {
-    if (hasCriticalResults) return 'Critical Results';
-    if (metadata.analysisStatus == 'success') return 'Analyzed';
-    if (metadata.analysisStatus == 'pending') return 'Processing';
-    return 'Not Analyzed';
-  }
+  // String get statusText {
+  //   if (hasCriticalResults) return 'Critical Results';
+  //   if (metadata.analysisStatus == 'success') return 'Analyzed';
+  //   if (metadata.analysisStatus == 'pending') return 'Processing';
+  //   return 'Not Analyzed';
+  // }
 }
 
 class MedicalRecordMetadata {
   final String? analysisStatus;
-  final String? doctorName;
-  final String? facility;
-  final String? patientName;
+  // final String? doctorName;
+  // final String? facility;
+  // final String? patientName;
   final String? notes;
-  final String? testType;
-  final String? testDate;
-  final String? prescriptionDate;
-  final List<TestResult>? testResults;
-  final List<TestResult>? criticalResults;
-  final List<Medication>? medications;
-  final String? diagnosis;
-  final String? medicationName;
-  final String? expiryDate;
+  // final String? testType;
+  // final String? testDate;
+  // final String? prescriptionDate;
+  // final List<TestResult>? testResults;
+  // final List<TestResult>? criticalResults;
+  // final List<Medication>? medications;
+  // final String? diagnosis;
+  // final String? medicationName;
+  // final String? expiryDate;
   final Map<String, dynamic>? aiAnalysis;
 
   MedicalRecordMetadata({
     this.analysisStatus,
-    this.doctorName,
-    this.facility,
-    this.patientName,
+    // this.doctorName,
+    // this.facility,
+    // this.patientName,
     this.notes,
-    this.testType,
-    this.testDate,
-    this.prescriptionDate,
-    this.testResults,
-    this.criticalResults,
-    this.medications,
-    this.diagnosis,
-    this.medicationName,
-    this.expiryDate,
+    // this.testType,
+    // this.testDate,
+    // this.prescriptionDate,
+    // this.testResults,
+    // this.criticalResults,
+    // this.medications,
+    // this.diagnosis,
+    // this.medicationName,
+    // this.expiryDate,
     this.aiAnalysis,
   });
 
   factory MedicalRecordMetadata.fromJson(Map<String, dynamic> json) {
     return MedicalRecordMetadata(
       analysisStatus: json['analysisStatus'],
-      doctorName: json['doctorName'],
-      facility: json['facility'],
-      patientName: json['patientName'],
+      // doctorName: json['doctorName'],
+      // facility: json['facility'],
+      // patientName: json['patientName'],
       notes: json['notes'],
-      testType: json['testType'],
-      testDate: json['testDate'],
-      prescriptionDate: json['prescriptionDate'],
-      testResults: (json['testResults'] as List?)
-          ?.map((e) => TestResult.fromJson(e))
-          .toList(),
-      criticalResults: (json['criticalResults'] as List?)
-          ?.map((e) => TestResult.fromJson(e))
-          .toList(),
-      medications: (json['medications'] as List?)
-          ?.map((e) => Medication.fromJson(e))
-          .toList(),
-      diagnosis: json['diagnosis'],
-      medicationName: json['medicationName'],
-      expiryDate: json['expiryDate'],
+      // testType: json['testType'],
+      // testDate: json['testDate'],
+      // prescriptionDate: json['prescriptionDate'],
+      // testResults: (json['testResults'] as List?)
+      //     ?.map((e) => TestResult.fromJson(e))
+      //     .toList(),
+      // criticalResults: (json['criticalResults'] as List?)
+      //     ?.map((e) => TestResult.fromJson(e))
+      //     .toList(),
+      // medications: (json['medications'] as List?)
+      //     ?.map((e) => Medication.fromJson(e))
+      //     .toList(),
+      // diagnosis: json['diagnosis'],
+      // medicationName: json['medicationName'],
+      // expiryDate: json['expiryDate'],
       aiAnalysis: json['aiAnalysis'],
     );
   }
@@ -196,45 +196,45 @@ class MedicalRecordMetadata {
   Map<String, dynamic> toJson() {
     return {
       'analysisStatus': analysisStatus,
-      'doctorName': doctorName,
-      'facility': facility,
-      'patientName': patientName,
+      // 'doctorName': doctorName,
+      // 'facility': facility,
+      // 'patientName': patientName,
       'notes': notes,
-      'testType': testType,
-      'testDate': testDate,
-      'prescriptionDate': prescriptionDate,
-      'testResults': testResults?.map((e) => e.toJson()).toList(),
-      'criticalResults': criticalResults?.map((e) => e.toJson()).toList(),
-      'medications': medications?.map((e) => e.toJson()).toList(),
-      'diagnosis': diagnosis,
-      'medicationName': medicationName,
-      'expiryDate': expiryDate,
+      // 'testType': testType,
+      // 'testDate': testDate,
+      // 'prescriptionDate': prescriptionDate,
+      // 'testResults': testResults?.map((e) => e.toJson()).toList(),
+      // 'criticalResults': criticalResults?.map((e) => e.toJson()).toList(),
+      // 'medications': medications?.map((e) => e.toJson()).toList(),
+      // 'diagnosis': diagnosis,
+      // 'medicationName': medicationName,
+      // 'expiryDate': expiryDate,
       'aiAnalysis': aiAnalysis,
     };
   }
 
   // Display helpers
-  String get facilityDisplayName => facility ?? 'Unknown Facility';
-  String get doctorDisplayName => doctorName ?? 'Unknown Doctor';
-  int get medicationCount => medications?.length ?? 0;
-  int get testResultCount => testResults?.length ?? 0;
-  int get criticalResultCount => criticalResults?.length ?? 0;
+  // String get facilityDisplayName => facility ?? 'Unknown Facility';
+  // String get doctorDisplayName => doctorName ?? 'Unknown Doctor';
+  // int get medicationCount => medications?.length ?? 0;
+  // int get testResultCount => testResults?.length ?? 0;
+  // int get criticalResultCount => criticalResults?.length ?? 0;
   
-  bool get hasResults => testResults?.isNotEmpty ?? false;
-  bool get hasMedications => medications?.isNotEmpty ?? false;
+  // bool get hasResults => testResults?.isNotEmpty ?? false;
+  // bool get hasMedications => medications?.isNotEmpty ?? false;
   bool get isAnalyzed => analysisStatus == 'success';
   
-  String get medicationSummary {
-    if (medications?.isEmpty ?? true) return 'No medications';
-    if (medications!.length == 1) return '1 medication';
-    return '${medications!.length} medications';
-  }
+  // String get medicationSummary {
+  //   if (medications?.isEmpty ?? true) return 'No medications';
+  //   if (medications!.length == 1) return '1 medication';
+  //   return '${medications!.length} medications';
+  // }
   
-  String get testResultSummary {
-    if (testResults?.isEmpty ?? true) return 'No test results';
-    if (testResults!.length == 1) return '1 test result';
-    return '${testResults!.length} test results';
-  }
+  // String get testResultSummary {
+  //   if (testResults?.isEmpty ?? true) return 'No test results';
+  //   if (testResults!.length == 1) return '1 test result';
+  //   return '${testResults!.length} test results';
+  // }
 }
 
 class TestResult {

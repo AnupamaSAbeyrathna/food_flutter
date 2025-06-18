@@ -31,13 +31,27 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
   final _ageController = TextEditingController();
   final _relationshipController = TextEditingController();
   final _healthNotesController = TextEditingController();
-  final _allergiesController = TextEditingController(); // Added allergies controller
-  final _longTermMedicationsController = TextEditingController(); // Added medications controller
+  final _allergiesController = TextEditingController();
+  final _longTermMedicationsController = TextEditingController();
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
 
   String _selectedGender = 'Male';
+  String _selectedBloodGroup = '';
   DateTime? _selectedBirthDate;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other', 'Prefer not to say'];
+  final List<String> _bloodGroupOptions = [
+    '',
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-'
+  ];
   final List<String> _relationshipSuggestions = [
     'Parent',
     'Child',
@@ -73,8 +87,11 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
       _selectedGender = member.gender;
       _relationshipController.text = member.relationship;
       _healthNotesController.text = member.healthNotes;
-      _allergiesController.text = member.allergies; // Initialize allergies
-      _longTermMedicationsController.text = member.longTermMedications; // Initialize medications
+      _allergiesController.text = member.allergies;
+      _longTermMedicationsController.text = member.longTermMedications;
+      _heightController.text = member.height > 0 ? member.height.toString() : '';
+      _weightController.text = member.weight > 0 ? member.weight.toString() : '';
+      _selectedBloodGroup = member.bloodGroup;
     }
 
     // Add listeners for unsaved changes detection
@@ -82,8 +99,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     _ageController.addListener(_onFormChanged);
     _relationshipController.addListener(_onFormChanged);
     _healthNotesController.addListener(_onFormChanged);
-    _allergiesController.addListener(_onFormChanged); // Added listener
-    _longTermMedicationsController.addListener(_onFormChanged); // Added listener
+    _allergiesController.addListener(_onFormChanged);
+    _longTermMedicationsController.addListener(_onFormChanged);
+    _heightController.addListener(_onFormChanged);
+    _weightController.addListener(_onFormChanged);
   }
 
   void _onFormChanged() {
@@ -100,6 +119,22 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
       age--;
     }
     return age;
+  }
+
+  double _calculateBmi() {
+    final height = double.tryParse(_heightController.text) ?? 0;
+    final weight = double.tryParse(_weightController.text) ?? 0;
+    if (height <= 0 || weight <= 0) return 0.0;
+    final heightInMeters = height / 100;
+    return weight / (heightInMeters * heightInMeters);
+  }
+
+  String _getBmiCategory(double bmi) {
+    if (bmi <= 0) return '';
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal weight';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
   }
 
   Future<bool> _onWillPop() async {
@@ -172,8 +207,11 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
         gender: _selectedGender,
         relationship: _relationshipController.text.trim(),
         healthNotes: _healthNotesController.text.trim(),
-        allergies: _allergiesController.text.trim(), // Added allergies
-        longTermMedications: _longTermMedicationsController.text.trim(), // Added medications
+        allergies: _allergiesController.text.trim(),
+        longTermMedications: _longTermMedicationsController.text.trim(),
+        height: double.tryParse(_heightController.text) ?? 0.0,
+        weight: double.tryParse(_weightController.text) ?? 0.0,
+        bloodGroup: _selectedBloodGroup,
       );
 
       await docRef.set(member.toMap());
@@ -233,8 +271,10 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     _ageController.dispose();
     _relationshipController.dispose();
     _healthNotesController.dispose();
-    _allergiesController.dispose(); // Added disposal
-    _longTermMedicationsController.dispose(); // Added disposal
+    _allergiesController.dispose();
+    _longTermMedicationsController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -372,6 +412,82 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
                   ),
                   const SizedBox(height: 16),
 
+                  // Physical Information Section
+                  _buildSectionCard(
+                    'Physical Information',
+                    Icons.monitor_weight,
+                    [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _heightController,
+                              label: 'Height (cm)',
+                              icon: Icons.height,
+                              keyboardType: TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                              ],
+                              validator: (val) {
+                                if (val?.isNotEmpty == true) {
+                                  final height = double.tryParse(val!);
+                                  if (height == null || height < 30 || height > 300) {
+                                    return 'Enter valid height';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _weightController,
+                              label: 'Weight (kg)',
+                              icon: Icons.monitor_weight_outlined,
+                              keyboardType: TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                              ],
+                              validator: (val) {
+                                if (val?.isNotEmpty == true) {
+                                  final weight = double.tryParse(val!);
+                                  if (weight == null || weight < 1 || weight > 500) {
+                                    return 'Enter valid weight';
+                                  }
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              value: _selectedBloodGroup,
+                              label: 'Blood Group',
+                              icon: Icons.bloodtype,
+                              items: _bloodGroupOptions,
+                              displayEmpty: 'Not specified',
+                              onChanged: (val) {
+                                setState(() => _selectedBloodGroup = val!);
+                                _onFormChanged();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildBmiDisplay(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
                   // Relationship Section
                   _buildSectionCard(
                     'Relationship',
@@ -388,7 +504,7 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
                   ),
                   const SizedBox(height: 16),
 
-                  // Health Information Section - Updated with new fields
+                  // Health Information Section
                   _buildSectionCard(
                     'Health Information',
                     Icons.health_and_safety,
@@ -435,8 +551,66 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     );
   }
 
+Widget _buildBmiDisplay() {
+    final bmi = _calculateBmi();
+    final category = _getBmiCategory(bmi);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calculate, color: Colors.grey.shade600, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'BMI',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            bmi > 0 ? bmi.toStringAsFixed(1) : 'Not calculated',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: bmi > 0 ? Theme.of(context).colorScheme.primary : Colors.grey.shade600,
+            ),
+          ),
+          if (category.isNotEmpty)
+            Text(
+              category,
+              style: TextStyle(
+                fontSize: 12,
+                color: _getBmiCategoryColor(bmi),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Color _getBmiCategoryColor(double bmi) {
+    if (bmi <= 0) return Colors.grey.shade600;
+    if (bmi < 18.5) return Colors.blue;
+    if (bmi < 25) return Colors.green;
+    if (bmi < 30) return Colors.orange;
+    return Colors.red;
+  }
+
   Widget _buildSectionCard(String title, IconData icon, List<Widget> children) {
-    final theme = Theme.of(context);
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -447,18 +621,22 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
           children: [
             Row(
               children: [
-                Icon(icon, color: theme.colorScheme.primary, size: 24),
+                Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             ...children,
           ],
         ),
@@ -470,11 +648,11 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    String? Function(String?)? validator,
+    String? hint,
+    int maxLines = 1,
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
-    int maxLines = 1,
-    String? hint,
+    String? Function(String?)? validator,
     TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return TextFormField(
@@ -486,21 +664,14 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-        ),
         filled: true,
         fillColor: Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      validator: validator,
+      maxLines: maxLines,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
-      maxLines: maxLines,
+      validator: validator,
       textCapitalization: textCapitalization,
     );
   }
@@ -510,29 +681,30 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     required String label,
     required IconData icon,
     required List<String> items,
+    String? displayEmpty,
     required void Function(String?) onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      value: value.isEmpty && displayEmpty != null ? null : value,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-        ),
         filled: true,
         fillColor: Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      hint: displayEmpty != null ? Text(displayEmpty) : null,
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(item.isEmpty && displayEmpty != null ? displayEmpty : item),
+        );
+      }).toList(),
       onChanged: onChanged,
+      validator: label.contains('*') ? (val) => val?.isEmpty == true ? 'Please select $label' : null : null,
     );
   }
 
@@ -544,46 +716,73 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
     String? Function(String?)? validator,
   }) {
     return Autocomplete<String>(
-      optionsBuilder: (textEditingValue) {
-        if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
-        return suggestions.where((option) =>
-            option.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return suggestions;
+        }
+        return suggestions.where((String option) {
+          return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+        });
       },
-      fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-        this._relationshipController.text = controller.text;
+      onSelected: (String selection) {
+        controller.text = selection;
+        _onFormChanged();
+      },
+      fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
+        // Sync the autocomplete controller with our main controller
+        if (controller.text != fieldController.text) {
+          fieldController.text = controller.text;
+        }
+        
+        fieldController.addListener(() {
+          if (controller.text != fieldController.text) {
+            controller.text = fieldController.text;
+            _onFormChanged();
+          }
+        });
+
         return TextFormField(
-          controller: controller,
+          controller: fieldController,
           focusNode: focusNode,
-          onEditingComplete: onEditingComplete,
           decoration: InputDecoration(
             labelText: label,
             prefixIcon: Icon(icon),
-            suffixIcon: const Icon(Icons.arrow_drop_down),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-            ),
             filled: true,
             fillColor: Colors.grey.shade50,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
           validator: validator,
           textCapitalization: TextCapitalization.words,
-          onChanged: (value) {
-            this._relationshipController.text = value;
-            _onFormChanged();
-          },
+          onFieldSubmitted: (value) => onFieldSubmitted(),
         );
       },
-      onSelected: (selection) {
-        _relationshipController.text = selection;
-        _onFormChanged();
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return ListTile(
+                    dense: true,
+                    title: Text(option),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
       },
     );
   }
@@ -596,26 +795,49 @@ class _AddFamilyMemberScreenState extends State<AddFamilyMemberScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           elevation: 2,
         ),
         child: _isLoading
-            ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    isEditing ? 'Updating...' : 'Adding...',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(isEditing ? Icons.update : Icons.save),
+                  Icon(
+                    isEditing ? Icons.update : Icons.person_add,
+                    size: 24,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    isEditing ? 'Update Member' : 'Save Member',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    isEditing ? 'Update Member' : 'Add Member',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
